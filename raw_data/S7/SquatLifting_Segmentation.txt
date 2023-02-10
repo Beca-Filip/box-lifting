@@ -1,0 +1,13 @@
+Trial: laurent_squatlifting1
+1 set, 5 repetitions 
+
+Below are the data samples for lifting up and down movements for each repetition and each set, 
+e.g.,  sample 1 --> sample 2 --> sample 3 indicates 1 repetition: 
+the up mvt is between sample 1 and sample 2 and the down mvt is between sample 2 and sample 3 
+
+Set 1:
+422 --> 957 --> 1402
+1402 --> 1873 --> 2339
+2339 --> 2793 --> 3255
+3255 --> 3721 --> 4207
+4207 --> 4677 --> 5135

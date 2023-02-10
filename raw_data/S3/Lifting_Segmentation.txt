@@ -1,0 +1,34 @@
+Trial: rami_normallifting1
+4 sets, 5 repetitions each
+
+Below are the data samples for lifting up and down movements for each repetition and each set, 
+e.g.,  sample 1 --> sample 2 --> sample 3 indicates 1 repetition: 
+the up mvt is between sample 1 and sample 2 and the down mvt is between sample 2 and sample 3 
+
+Set 1:
+393 --> 1065 --> 1570
+1570 --> 2075 --> 2636
+2636 --> 3140 --> 3533
+3583 --> 4093 --> 4598
+4598 --> 4991 --> 5551
+
+Set 2:
+12729 --> 13178 --> 13626
+13626 --> 14019 --> 14467
+14467 --> 14972 --> 15421
+15421 --> 15869 --> 16206
+16206 --> 16625 --> 17282
+
+Set 3:
+39514 --> 39931 --> 40585
+40585 --> 41061 --> 41478
+41478 --> 41954 --> 42430
+42430 --> 42965 --> 43442
+43442 --> 43918 --> 44453
+
+Set 4:
+51001 --> 51565 --> 51941
+51941 --> 52504 --> 52965
+52965 --> 53467 --> 53997
+53997 --> 54498 --> 54940
+54490 --> 55412 --> 55953

@@ -1,0 +1,37 @@
+  struct with fields:
+
+	missing RTOE
+	calculating RTOE = f(HEEL (RHEE), METATARSAL)
+         AILCL: [8973×3 double]		non-important
+         AILCR: [8973×3 double]		non-important
+         ANKLE: [8973×3 double]		RANK
+          BACK: [8973×3 double]		BACK
+         ELBOW: [8973×3 double]		RELB
+         GTROC: [8973×3 double]		RGTR
+          HEEL: [8973×3 double]		RHEE
+          KNEE: [8973×3 double]		RKNE
+          LATL: [8973×3 double]		non-important
+          LATR: [8973×3 double]		non-important
+    METATARSAL: [8973×3 double]		none
+         PILCL: [8973×3 double]		non-important
+         PILCR: [8973×3 double]		non-important
+      SHOULDER: [8973×3 double]		RSHO
+         WRIST: [8973×3 double]		RWRI
+		 
+		 
+  struct with fields:
+
+	missing FARDL, FARUR
+	calculating FARDL = f(FARR, NEAR, FARMID) 
+	calculating FARUR = f(FARR, NEAR, FARMID)
+	  FARMID: [8973×3 double] none
+      FARR: [8973×3 double] FARDR
+      NEAR: [8973×3 double]	NEADR
+	  
+	  
+
+  struct with fields:
+
+    FARL: [8973×3 double] same
+    FARR: [8973×3 double] same
+    NEAR: [8973×3 double] same

@@ -1,0 +1,34 @@
+Trial: clement_normallifting1
+4 sets, 5 repetitions each
+
+Below are the data samples for lifting up and down movements for each repetition and each set, 
+e.g.,  sample 1 --> sample 2 --> sample 3 indicates 1 repetition: 
+the up mvt is between sample 1 and sample 2 and the down mvt is between sample 2 and sample 3 
+
+Set 1:
+0 --> 696 --> 1218
+1218 --> 1740 --> 2218
+2218 --> 2740 --> 3219
+3219 --> 3784 --> 4350
+4350 --> 4828 --> 5307
+
+Set 2:
+13006 --> 13746 --> 14224
+14224 --> 14790 --> 15312
+15312 --> 15834 --> 16311
+16311 --> 16891 --> 17335
+17335 --> 17881 --> 18324
+
+Set 3:
+24773 --> 25661 --> 26172
+26172 --> 26684 --> 27162
+27162 --> 27640 --> 28117
+28117 --> 28595 --> 29141
+29141 --> 29585 --> 30097
+
+Set 4:
+37396 --> 38347 --> 38840
+38840 --> 39389 --> 39846
+39846 --> 40383 --> 40833
+40833 --> 41377 --> 41920
+41920 --> 42483 --> 42995

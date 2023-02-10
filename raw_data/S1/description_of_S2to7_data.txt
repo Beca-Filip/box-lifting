@@ -1,0 +1,27 @@
+
+  struct with fields:
+
+    BACK: [14126×3 double]
+    RANK: [14126×3 double]
+    RELB: [14126×3 double]
+    RGTR: [14126×3 double]
+    RHEE: [14126×3 double]
+    RKNE: [14126×3 double]
+    RSHO: [14126×3 double]
+    RTOE: [14126×3 double]
+    RWRI: [14126×3 double]
+
+
+  struct with fields:
+
+    FARDL: [14126×3 double]
+    FARDR: [14126×3 double]
+    FARUR: [14126×3 double]
+    NEADR: [14126×3 double]
+	
+
+  struct with fields:
+
+    FARL: [14126×3 double]
+    FARR: [14126×3 double]
+    NEAR: [14126×3 double]
