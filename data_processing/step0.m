@@ -147,6 +147,10 @@ segmentation_filepaths = [...
 
 subject_info_filepath = "../raw_data/subjects_info.xlsx";
 
+% Sampling rate
+SamplingTime = 0.01;
+SamplingFrequency = 100;
+
 % General info
 NO_SUBJECTS = 7;
 
@@ -361,6 +365,7 @@ fprintf("\n");
 
 %% Fill the gaps in markers and undersample oversampled forceplate data
 %This part of the script:
+%   - Memorize sampling rate in the structures
 %   - Fills gaps in Markers using the FillCubic function
 %   - Rotates the Marker coordinates so that the X-axis is pointing in the
 %   posterior-anterior axis, while the Z-axis is pointing along the
@@ -422,7 +427,7 @@ end
 
 % Check each lifting trial
 for numSubj = 1 : length(subjLift)
-    
+        
     % Fill the gaps in the Markers
     % Get markerset names
     markerSetNames = fieldnames(Lifting.(subjLift{numSubj}).Markers);
@@ -465,7 +470,7 @@ end
 
 % Check each squat lifting trial
 for numSubj = 1 : length(subjSquatLift)
-    
+        
     % Fill the gaps in the Markers
     % Get markerset names
     markerSetNames = fieldnames(SquatLifting.(subjSquatLift{numSubj}).Markers);
@@ -533,6 +538,19 @@ for numSubj = 1 : NO_SUBJECTS
     SquatLifting.(subj).AGE = AGE;
     SquatLifting.(subj).HEIGHT = HEIGHT;
     SquatLifting.(subj).WEIGHT = WEIGHT;
+    
+    % Retain the sampling rate and number of samples
+    Calibration.(subj).NumberSamples = size(Calibration.(subj).Forceplate.Forces, 1);
+    Calibration.(subj).SamplingTime = SamplingTime;
+    Calibration.(subj).SamplingFrequency = SamplingFrequency;
+    % Retain the sampling rate
+    Lifting.(subj).NumberSamples = size(Lifting.(subj).Forceplate.Forces, 1);
+    Lifting.(subj).SamplingTime = SamplingTime;
+    Lifting.(subj).SamplingFrequency = SamplingFrequency;
+    % Retain the sampling rate
+    SquatLifting.(subj).NumberSamples = size(SquatLifting.(subj).Forceplate.Forces, 1);
+    SquatLifting.(subj).SamplingTime = SamplingTime;
+    SquatLifting.(subj).SamplingFrequency = SamplingFrequency;
 end
 
 
@@ -547,7 +565,8 @@ lifting_filepath = "../processed_data/Lifting/lifting.mat";
 squatlifting_filepath = "../processed_data/SquatLifting/squatlifting.mat";
 
 % Save the data
+fprintf("Saving data...\n");
 save(calibration_filepath, "Calibration");
 save(lifting_filepath, "Lifting");
 save(squatlifting_filepath, "SquatLifting");
-
+fprintf("Saved data.\n");

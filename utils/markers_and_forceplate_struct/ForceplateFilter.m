@@ -1,4 +1,4 @@
-function [Forceplate] = ForceplateFilter(Forceplate,f_ech,f_cutoff, order)
+function [Forceplate] = ForceplateFilter(Forceplate,f_ech,f_cutoff,order)
 %FORCEPLATEFILTER returns the forceplate data filtered by a filter with
 %f_cutoff frequency and of given order, while f_ech is the sampling
 %frequency.

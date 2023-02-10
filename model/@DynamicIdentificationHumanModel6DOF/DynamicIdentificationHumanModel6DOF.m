@@ -67,12 +67,16 @@ classdef DynamicIdentificationHumanModel6DOF
         
         % Parameter deviation from ref
         refDeviation(1, 1)
+        % Total mass deviation from ref
+        totalMassDeviationFactor(1, 1)
+        % Base to forceplate frame possible deviation in [m]
+        baseToForceplateFrameMaxDeviation(3, 1);
         
         % Optimization functions        
         % Cost function object
         costFunction(1, 1)
         % Total mass constraint object
-        totalMassConstraint(1, 1)
+        totalMassConstraint(:, 1)
         % Mass limit constraints objet
         massLimitConstraints(:, 1)   
         % Inertia limit constraints
@@ -204,9 +208,9 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.cf_mz = sum(sum(obj.res_mz.^2) ./ (2*nbSamples));
             obj.cf_cop = sum(sum(obj.res_cop.^2) ./ (2*nbSamples));
             
-%             obj.costFunction = obj.cf_fx + obj.cf_fy + obj.cf_mz + obj.cf_cop;
-%             obj.costFunction = obj.cf_cop*1e4; % in m2
-            obj.costFunction = obj.cf_mz; % in m2
+            obj.costFunction = obj.cf_fx + obj.cf_fy + obj.cf_mz*100 + obj.cf_cop*10000;
+%             obj.costFunction = obj.cf_cop*1e4; % in [cm^2]
+%             obj.costFunction = obj.cf_mz; % in [N.m^2]
             
             % Add to opti object
             obj.opti.minimize(obj.costFunction);
@@ -214,8 +218,16 @@ classdef DynamicIdentificationHumanModel6DOF
             % Calculate the constraints
             % Define the reference deviation for parameters
             obj.refDeviation = 0.3;
+            % Define the total mass deviation
+            obj.totalMassDeviationFactor = 0.02;
+            % Define the base to forceplate frame possible deviation
+            obj.baseToForceplateFrameMaxDeviation = 0.05 * ones(3, 1);
+            
             % Define the total mass constraint
-            obj.totalMassConstraint = [(sum(obj.M)+obj.MFOOT+obj.MHAND+obj.MHEAD) - obj.casadiHumanModelRef.WEIGHT];
+            obj.totalMassConstraint = [...
+            -(sum(obj.M)+obj.MFOOT+obj.MHAND+obj.MHEAD) + (1 - obj.totalMassDeviationFactor) * obj.casadiHumanModelRef.WEIGHT;
+             (sum(obj.M)+obj.MFOOT+obj.MHAND+obj.MHEAD) - (1 + obj.totalMassDeviationFactor) * obj.casadiHumanModelRef.WEIGHT;
+            ];
             % Mass limit constraints objet
             obj.massLimitConstraints = [...
             -obj.M.' + (1 - obj.refDeviation) * obj.casadiHumanModelRef.M.';
@@ -258,18 +270,26 @@ classdef DynamicIdentificationHumanModel6DOF
             ];
             % Displacement of model and forceplate constraints
             %%% Careful: use of abs
+%             obj.displacementOfModelAndForceplateConstraints = [...
+%             -abs(obj.base_r_base_fp) + (1 - obj.refDeviation) * abs(obj.base_r_base_fp_ref);
+%              abs(obj.base_r_base_fp) - (1 + obj.refDeviation) * abs(obj.base_r_base_fp_ref);
+%             ];
             obj.displacementOfModelAndForceplateConstraints = [...
-            -abs(obj.base_r_base_fp) + (1 - obj.refDeviation) * abs(obj.base_r_base_fp_ref);
-             abs(obj.base_r_base_fp) - (1 + obj.refDeviation) * abs(obj.base_r_base_fp_ref);
+             obj.base_r_base_fp - obj.base_r_base_fp_ref;
             ];
+%             obj.displacementOfModelAndForceplateConstraints = [...
+%             -obj.base_r_base_fp + (obj.base_r_base_fp_ref - obj.baseToForceplateFrameMaxDeviation);
+%              obj.base_r_base_fp - (obj.base_r_base_fp_ref + obj.baseToForceplateFrameMaxDeviation);
+%             ];
         
             % Add to opti object
-            obj.opti.subject_to(obj.totalMassConstraint == 0);
+            obj.opti.subject_to(obj.totalMassConstraint <= 0);
             obj.opti.subject_to(obj.massLimitConstraints <= 0);
             obj.opti.subject_to(obj.inertiaLimitConstraints <= 0);
             obj.opti.subject_to(obj.centerOfMassLimitConstraints <= 0);
             obj.opti.subject_to(obj.jointTorqueConstraints <= 0);
-            obj.opti.subject_to(obj.displacementOfModelAndForceplateConstraints <= 0);
+%             obj.opti.subject_to(obj.displacementOfModelAndForceplateConstraints <= 0);
+            obj.opti.subject_to(obj.displacementOfModelAndForceplateConstraints == 0);
         end
         
         function obj = instantiateParameters(obj, Forceplate, q, dq, ddq, humanModelRef, base_R_fp, base_r_base_fp)
@@ -315,6 +335,54 @@ classdef DynamicIdentificationHumanModel6DOF
         
         function f_grf = computeGRF(obj, solutionObj)
             f_grf = solutionObj.value(obj.f_grf);
+        end
+        
+        function base_r_base_fp = compute_base_r_base_fp(obj, solutionObj)
+            base_r_base_fp = solutionObj.value(obj.base_r_base_fp);
+        end
+        
+        function numericHumanModel = computeNumericalModel(obj, solutionObj)
+            %% Extract all parameters of a human model
+            % Initialize it
+            numericHumanModel = HumanModel6DOF();
+            
+            %% Parameters that are inside the casadiHumanModelRef object
+            numericHumanModel.HEIGHT = solutionObj.value(obj.casadiHumanModelRef.HEIGHT);
+            
+            numericHumanModel.R = solutionObj.value(obj.casadiHumanModelRef.R);
+            numericHumanModel.p = solutionObj.value(obj.casadiHumanModelRef.p);
+            
+            numericHumanModel.HeelPosition = solutionObj.value(obj.casadiHumanModelRef.HeelPosition);
+            numericHumanModel.ToePosition = solutionObj.value(obj.casadiHumanModelRef.ToePosition);
+            
+            numericHumanModel.L = solutionObj.value(obj.casadiHumanModelRef.L);
+            
+            numericHumanModel.LFOOT = solutionObj.value(obj.casadiHumanModelRef.LFOOT);
+            numericHumanModel.LHAND = solutionObj.value(obj.casadiHumanModelRef.LHAND);
+            numericHumanModel.LHEAD = solutionObj.value(obj.casadiHumanModelRef.LHEAD);
+            
+            numericHumanModel.LowerJointLimits = solutionObj.value(obj.casadiHumanModelRef.LowerJointLimits);
+            numericHumanModel.UpperJointLimits = solutionObj.value(obj.casadiHumanModelRef.UpperJointLimits);
+            numericHumanModel.LowerTorqueLimits = solutionObj.value(obj.casadiHumanModelRef.LowerTorqueLimits);
+            numericHumanModel.UpperTorqueLimits = solutionObj.value(obj.casadiHumanModelRef.UpperTorqueLimits);
+            
+            numericHumanModel.LengthToRadiiFactor = solutionObj.value(obj.casadiHumanModelRef.LengthToRadiiFactor);
+            %% Parameters that are variables of the optimization            
+            numericHumanModel.WEIGHT = solutionObj.value((sum(obj.M)+obj.MFOOT+obj.MHAND+obj.MHEAD));
+            
+            numericHumanModel.CoM = solutionObj.value(obj.CoM);
+            numericHumanModel.M = solutionObj.value(obj.M);
+            numericHumanModel.Izz = solutionObj.value(obj.Izz);
+            
+            numericHumanModel.CoMFOOT = solutionObj.value(obj.CoMFOOT);
+            numericHumanModel.CoMHAND = solutionObj.value(obj.CoMHAND);
+            numericHumanModel.CoMHEAD = solutionObj.value(obj.CoMHEAD);
+            numericHumanModel.MFOOT = solutionObj.value(obj.MFOOT);
+            numericHumanModel.MHAND = solutionObj.value(obj.MHAND);
+            numericHumanModel.MHEAD = solutionObj.value(obj.MHEAD);
+            numericHumanModel.IzzFOOT = solutionObj.value(obj.IzzFOOT);
+            numericHumanModel.IzzHAND = solutionObj.value(obj.IzzHAND);
+            numericHumanModel.IzzHEAD = solutionObj.value(obj.IzzHEAD);            
         end
     end
 end

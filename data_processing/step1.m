@@ -20,17 +20,27 @@ base_R_fp = base_R_markers * markers_R_fp;
 calibration_filepath = "../processed_data/Calibration/calibration.mat";
 Calibration = importdata(calibration_filepath, "Calibration");
 
+% Output folder path
+common_output_folderpath = "../processed_data/Calibration/";
+
+
 %% Perform the computations
 
 % Prealocate an array of calibrated human models
 CalibratedHumanModels = [];
 
 % For each subject
-% for numSubj = 2 : NO_SUBJECTS
-for numSubj = 4
+for numSubj = 2 : NO_SUBJECTS
+% for numSubj = 4
     
     % Subject name
     subj = sprintf("S%d", numSubj);
+    
+    % Output folderpath
+    subject_output_folderpath = sprintf("%s%s/", common_output_folderpath, subj);
+    if ~exist(subject_output_folderpath, 'dir')
+        mkdir(subject_output_folderpath);
+    end
     
     % Get a default human model
     % HumanModel6DOF constructor parameters
@@ -42,6 +52,20 @@ for numSubj = 4
     % Create a default HumanModel6DOF (uses anthropometric tables)
     currHumanModel = HumanModel6DOF(R,p,WEIGHT,HEIGHT);        
     
+    % Get number of samples
+    nbSamples = Calibration.(subj).NumberSamples;
+%     nbSamples = 1000;
+    
+    % Make a time vector rate
+    SamplingTime = Calibration.(subj).SamplingTime;
+    SamplingFrequency = Calibration.(subj).SamplingFrequency;
+    time_vec = 0 : SamplingTime : (nbSamples-1)*SamplingTime;
+    
+    % Define filtering parameters for raw data
+    filt_fs = SamplingFrequency;
+    filt_cutoff = 5;
+    filt_order = 5;
+    
     % Prepare the markers structure
     % TRanslation of markers from the OptiTrack frame to the HumanModel6DOF base frame
     pMarkers = -mean(Calibration.(subj).Markers.BODY.RANK);
@@ -49,9 +73,8 @@ for numSubj = 4
     % Translate and rotate markers
     Markers = MarkersTranslateRotate(pMarkers, base_R_markers, Calibration.(subj).Markers);
     
-    % Get number of samples
-    nbSamples = size(Markers.BODY.RANK, 1);
-%     nbSamples = 1000;
+    % Filter Marker data
+    Markers = MarkersFilter(Markers,filt_fs,filt_cutoff,filt_order);
     
     % Get Marker reference lengths
     L_markers = MarkersGetSegmentLengths(MarkersIndex(Markers, 1:nbSamples));
@@ -76,15 +99,24 @@ for numSubj = 4
     maxL = max(bandL_markers(2, :), maxL_AT);
     midrangeL = (minL + maxL) / 2;
     
-    % Compare
-    figL = figure;
+    % Compare lengths
+    titlestring = {...        
+    sprintf("Segment lenths of subject %s:", subj);
+    "- Extracted directly from Markers $L_{\rm Markers}$, with 3 standard deviation band,";
+    "- Extracted from Anthropometric Tables $L_{\rm AT}$, with 20\% deviation band,";
+    "- Extracted by Kinematic Identification $L_{\rm IK}$.";
+    };
+    fig_L_time = figure('Position', [100, 50, 1280, 720]);
+    sgtitle(titlestring, 'interpreter', 'latex', 'fontsize', 13);
     hold on;
-    opts.title = @(n) {sprintf('$L_%d$', n), 'interpreter', 'latex'};
-    plot_vector_quantities_opts_shape(1:nbSamples, L_markers.', [], opts, [2, 3], 'b', 'DisplayName', '$L_{\rm Markers}$');
-    plot_vector_quantities_opts_shape([1, nbSamples], repmat(meanL_markers, [2, 1]).', [], [], [2, 3], 'b', 'LineWidth', 2, 'DisplayName', '$m_{L_{\rm Markers}}$');
-    plot_vector_quantities_opts_shape([1, nbSamples], repmat(currHumanModel.L, [2, 1]).', [], [], [2, 3], 'r', 'LineWidth', 2, 'DisplayName', '$L_{\rm AT}$');
-    patch_vector_quantities_opts_shape([1, nbSamples, nbSamples, 1], patchBandL_AT.', [], [], [.5, .1, .1], [2,3], 'FaceAlpha', 0.1, 'DisplayName', '$L_{\rm AT} \pm 20 \%$');
-    patch_vector_quantities_opts_shape([1, nbSamples, nbSamples, 1], patchBandL_markers.', [], [], [.1, .1, .5], [2,3], 'FaceAlpha', 0.1, 'DisplayName', '$m_{L_{\rm Markers}} \pm 3 \sigma_{L_{\rm Markers}}$');
+    plotopts = [];
+    plotopts.title = @(n) {sprintf('$L_%d$', n), 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.xlabel = @(n) {'$t$ [s]', 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.ylabel = @(n) {sprintf('$L_%d$ [m]', n), 'interpreter', 'latex', 'fontsize', 13};
+    plot_vector_quantities_opts_shape(time_vec, L_markers.', [], plotopts, [2, 3], 'b', 'DisplayName', '$L_{\rm Markers}$');
+    plot_vector_quantities_opts_shape(time_vec([1, end]), repmat(meanL_markers, [2, 1]).', [], [], [2, 3], 'b', 'LineWidth', 2, 'DisplayName', '$m_{L_{\rm Markers}}$');    patch_vector_quantities_opts_shape(time_vec([1, end, end, 1]), patchBandL_markers.', [], [], [.1, .1, .5], [2,3], 'FaceAlpha', 0.1, 'DisplayName', '$m_{L_{\rm Markers}} \pm 3 \sigma_{L_{\rm Markers}}$');
+    plot_vector_quantities_opts_shape(time_vec([1, end]), repmat(currHumanModel.L, [2, 1]).', [], [], [2, 3], 'r', 'LineWidth', 2, 'DisplayName', '$L_{\rm AT}$');
+    patch_vector_quantities_opts_shape(time_vec([1, end, end, 1]), patchBandL_AT.', [], [], [.5, .1, .1], [2,3], 'FaceAlpha', 0.1, 'DisplayName', '$L_{\rm AT} \pm 20 \%$');
     legend('interpreter', 'latex');
     
     % Output structures
@@ -158,12 +190,16 @@ for numSubj = 4
     end
     fprintf("\n");
     
+    % Print the obtained resnorms
+    fprintf("sum(sum(resnorms_1_1.^2)) = %.4f\n", sum(sum(resnorms_1_1.^2)));
+    fprintf("sum(sum(resnorms_1_2.^2)) = %.4f\n", sum(sum(resnorms_1_2.^2)));
+    
     %%% PERFORM THE SEGMENT LENGTH - JOINT ANGLE IK ITERATIONS
     % Set the initial joint angle guesses for the segment length identification
     q_out_2_1 = q_out_1_1;
     q_out_2_2 = q_out_2_1;
     % Define the number of back-forth IK iterations
-    nbIKiterations = 2;
+    nbIKiterations = 1;
     
     % Start length-identification
     for numIteration = 1 : nbIKiterations
@@ -214,24 +250,39 @@ for numSubj = 4
         end
         fprintf("\n");
         
-        fprintf("sum(sum(resnorms_1_1.^2)) = %.4f\n", sum(sum(resnorms_1_1.^2)));
-        fprintf("sum(sum(resnorms_1_2.^2)) = %.4f\n", sum(sum(resnorms_1_2.^2)));
         fprintf("sum(sum(resnorms_2_1.^2)) = %.4f\n", sum(sum(resnorms_2_1.^2)));
         fprintf("sum(sum(resnorms_2_2.^2)) = %.4f\n", sum(sum(resnorms_2_2.^2)));
     end
     
     % Animate 2_1
-    figure;
-    Animate_nDOF_Markers(q_out_2_1, MarkersIndex(Markers, 1:nbSamples), L_out_2_1, 0.01);
+    fig_anim = figure('Position', [100, 50, 1280, 720]);
+    animopts = [];
+    animopts.title = sprintf("Animation of kinematically identified model alongside Markers");
+%     animopts.show_legend = true;
+    animopts.save_path = sprintf("%sKinematic_Identification", subject_output_folderpath);
+    Animate_nDOF_Markers(q_out_2_1, MarkersIndex(Markers, 1:nbSamples), L_out_2_1, 0.01, animopts);
     
     % Compare resnorms
-    figure;
+    titlestring = {...        
+    sprintf("Distances between Markers and predicted joint frame locations of subject %s:", subj);
+    "- with segment lengths extracted directly from Markers ${\rm IK}_{\rm Markers}$,";
+    "- with segment lengths extracted from Anthropometric Tables ${\rm IK}_{\rm AT}$";
+    "- with segment lengths extracted by Kinematic Identification initialized with Markers ${\rm IK}_{OPT-1}$.";
+    "- with segment lengths extracted by Kinematic Identification initialized with Anthropometric Tables ${\rm IK}_{OPT-2}$.";
+    };
+    fig_kin_residuals = figure('Position', [100, 50, 1280, 720]);
+    sgtitle(titlestring, 'interpreter', 'latex', 'fontsize', 13);
     hold on;
-    plot_vector_quantities_opts_shape(1:nbSamples, resnorms_1_1, [], [], [2, 3], 'DisplayName', "1-1");
-    plot_vector_quantities_opts_shape(1:nbSamples, resnorms_1_2, [], [], [2, 3], 'DisplayName', "1-2");
-    plot_vector_quantities_opts_shape(1:nbSamples, resnorms_2_1, [], [], [2, 3], 'DisplayName', "2-1");
-    plot_vector_quantities_opts_shape(1:nbSamples, resnorms_2_2, [], [], [2, 3], 'DisplayName', "2-2");
-    legend;
+    names = ["Knee", "Hip (GTR)", "Back", "Shoulder", "Elbow", "Wrist"];
+    plotopts = [];
+    plotopts.title = @(n) {sprintf("%s Marker", names(n)), 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.xlabel = @(n) {"$t$ [s]", 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.ylabel = @(n) {sprintf("${\\rm RES}_{%s}$ [m]", names(n)), 'interpreter', 'latex', 'fontsize', 13};
+    plot_vector_quantities_opts_shape(time_vec, resnorms_1_1, [], plotopts, [2, 3], 'DisplayName', "${\rm IK}_{\rm Markers}$");
+    plot_vector_quantities_opts_shape(time_vec, resnorms_1_2, [], [], [2, 3], 'DisplayName', "${\rm IK}_{\rm AT}$");
+    plot_vector_quantities_opts_shape(time_vec, resnorms_2_1, [], [], [2, 3], 'DisplayName', "${\rm IK}_{\rm OPT-1}$");
+    plot_vector_quantities_opts_shape(time_vec, resnorms_2_2, [], [], [2, 3], 'DisplayName', "${\rm IK}_{\rm OPT-2}$");
+    legend('interpreter', 'latex');
     fprintf("sum(sum(resnorms_1_1.^2)) = %.4f\n", sum(sum(resnorms_1_1.^2)));
     fprintf("sum(sum(resnorms_1_2.^2)) = %.4f\n", sum(sum(resnorms_1_2.^2)));
     fprintf("sum(sum(resnorms_2_1.^2)) = %.4f\n", sum(sum(resnorms_2_1.^2)));
@@ -242,32 +293,49 @@ for numSubj = 4
         calibratedHumanModel.L = L_out_2_1;
         calibratedHumanModel.q = q_out_2_1;
         % Segment lengths
-        gcf = figL;
-        plot_vector_quantities_opts_shape([1,nbSamples], repmat(L_out_2_1.', [1, 2]), [], [], [2, 3], 'g', 'LineWidth', 2, 'DisplayName', '$L_{IK}$');
+        figure(fig_L_time);
+        plot_vector_quantities_opts_shape(time_vec([1, end]), repmat(L_out_2_1.', [1, 2]), [], [], [2, 3], 'g', 'LineWidth', 2, 'DisplayName', '$L_{IK}$');
     else
         calibratedHumanModel.L = L_out_2_2;
         calibratedHumanModel.q = q_out_2_2;
-        % Segment lengths% Segment lengths
-        gcf = figL;
-        plot_vector_quantities_opts_shape([1,nbSamples], repmat(L_out_2_2.', [1, 2]), [], [], [2, 3], 'g', 'LineWidth', 2, 'DisplayName', '$L_{IK}$');        
+        % Segment lengths
+        figure(fig_L_time);
+        plot_vector_quantities_opts_shape(time_vec([1, end]), repmat(L_out_2_2.', [1, 2]), [], [], [2, 3], 'g', 'LineWidth', 2, 'DisplayName', '$L_{IK}$');        
     end
     CalibratedHumanModels = [CalibratedHumanModels; calibratedHumanModel];
+    
+    % Plot the lengths
+    % Names of the body parts
+    names = ["Shanks", "Thighs", "Pelvis-Abdomen", "Thorax", "Upper-arms", "Forearms"];
+    % Data vector
+    lengths = [...
+    [meanL_markers];
+    [currHumanModel.L];
+    [calibratedHumanModel.L];
+    ].';
+    % Figure plot
+    fig_L = figure('Position', [100, 50, 1280, 720]);
+    lengthbar = bar(lengths);
+    % Aesthetics
+    xticklabels(names);
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex'; % latex for x-axis
+    xlabel("Body parts", 'interpreter', 'latex', 'fontsize', 13);
+    ylabel("Segment lengths [m]", 'interpreter', 'latex', 'fontsize', 13);
+    legend("Directly from Markers", "Anthropometric Tables", "Kinematic Identification", 'interpreter', 'latex', 'fontsize', 13);
+    % Title
+    titlestring = {sprintf("Subject %s segment lengths:", subj)};
+    title(titlestring, 'interpreter', 'latex', 'fontsize', 13);
     
     % Update model lenghts
     currHumanModel.L = calibratedHumanModel.L;
     
     %% Dynamic identification
     % Get velocities and accelerations
-    % Filter parameters
-    filt_fs = 100;
-    filt_cutoff = 3;
-    filt_order = 5;
     % Filter q, and find dq and ddq
-    sampletime = 0.01;
-    t_filt = 0 : sampletime : (size(calibratedHumanModel.q, 2)-1)*sampletime;
     q_filt = lowpass_filter(calibratedHumanModel.q, filt_fs, filt_cutoff, filt_order);
-    dq_filt = diff(q_filt, 1, 2) ./ sampletime;
-    ddq_filt = diff(q_filt, 2, 2) ./ sampletime^2;
+    dq_filt = diff(q_filt, 1, 2) ./ SamplingTime;
+    ddq_filt = diff(q_filt, 2, 2) ./ SamplingTime^2;
     dq_filt = [dq_filt, dq_filt(:, end)];
     ddq_filt = [ddq_filt, ddq_filt(:, end-1:end)];
     
@@ -340,47 +408,154 @@ for numSubj = 4
              sqrt(sum(sum(sol_res_cop.^2) ./ (2 * nbSamples))));
 
     % Stack the residuals in a list
-%     grf_fig_title = {...
-%     strcat( ...
-%     sprintf("sqrt(sum(sum(sol_res_fx.^2) ./ nbSamples)) = %.4f [N]\n", ...
-%              sqrt(sum(sum(sol_res_fx.^2) ./ nbSamples))), ...
-%     sprintf("sqrt(sum(sum(sol_res_fy.^2) ./ nbSamples)) = %.4f [N]\n", ...
-%              sqrt(sum(sum(sol_res_fy.^2) ./ nbSamples))), ...
-%     sprintf("sqrt(sum(sum(sol_res_mz.^2) ./ nbSamples)) = %.4f [N.m]\n", ...
-%              sqrt(sum(sum(sol_res_mz.^2) ./ nbSamples))), ...
-%     sprintf("sqrt(sum(sum(sol_res_cop.^2) ./ nbSamples)) = %.4f [m]\n", ...
-%              sqrt(sum(sum(sol_res_cop.^2) ./ nbSamples))) ...
-%     );
-%     };
-    grf_fig_title = {...
+    titlestring = {...
+    sprintf("Residuals of force, torque and CoM predictions of the model of subject %s with respect to the forceplate measurements, with and without dynamic identification.", subj);
     strcat( ...
-    sprintf("$\\sqrt{\\frac{1}{T} \\sum ( (f_{\\rm DIM Model})_x - (f_{\\rm Forceplate})_x)^2} = %.4f$ [N]\n", ...
+    sprintf("$R_{M_x} = \\sqrt{\\frac{1}{T} \\sum ( (f_{\\rm DIM Model})_x - (f_{\\rm Forceplate})_x)^2} = %.4f$ [N]", ...
              sqrt(sum(sum(sol_res_fx.^2) ./ nbSamples))), ...
-    sprintf("$\\sqrt{\\frac{1}{T} \\sum ( (f_{\\rm DIM Model})_y - (f_{\\rm Forceplate})_y)^2} = %.4f$ [N]\n", ...
+    sprintf("$R_{M_y} = \\sqrt{\\frac{1}{T} \\sum ( (f_{\\rm DIM Model})_y - (f_{\\rm Forceplate})_y)^2} = %.4f$ [N]\n", ...
              sqrt(sum(sum(sol_res_fy.^2) ./ nbSamples))), ...             
-    sprintf("$\\sqrt{\\frac{1}{T} \\sum ( (\\tau_{\\rm DIM Model})_z - (\\tau_{\\rm Forceplate})_z)^2} = %.4f$ [N.m]\n", ...
+    sprintf("$R_{M_z} = \\sqrt{\\frac{1}{T} \\sum ( (\\tau_{\\rm DIM Model})_z - (\\tau_{\\rm Forceplate})_z)^2} = %.4f$ [N.m]", ...
              sqrt(sum(sum(sol_res_mz.^2) ./ nbSamples))), ...
-    sprintf("$\\sqrt{\\frac{1}{T} \\sum ( ({\\rm COP}_{\\rm DIM Model})_x - ({\\rm COP}_{\\rm Forceplate})_x)^2} = %.4f$ [m]\n", ...
+    sprintf("$R_{{\\rm COP}_x} = \\sqrt{\\frac{1}{T} \\sum ( ({\\rm COP}_{\\rm DIM Model})_x - ({\\rm COP}_{\\rm Forceplate})_x)^2} = %.4f$ [m]", ...
              sqrt(sum(sum(sol_res_cop.^2) ./ nbSamples))) ...
     );
     };
-%     grf_fig_title = sprintf("$\\sqrt{\\frac{1}{T} \\sum ( (f_{\\rm DIM Model})_x - (f_{\\rm Forceplate})_x)^2} = %.4f$ [N]\n", ...
-%              sqrt(sum(sum(sol_res_fx.^2) ./ nbSamples)));
     % Plot the GRF and COP
-    figure;
-    sgtitle(grf_fig_title, 'fontsize', 10, 'interpreter', 'latex');
-    names = ["$F_x$", "$F_y$", "$M_z$", '$COP_x$'];
+    fig_dyn_residuals = figure('Position', [100, 50, 1280, 720]);
+    sgtitle(titlestring, 'fontsize', 13, 'interpreter', 'latex');
+    names = ["$R_{F_x}$", "$R_{F_y}$", "$R_{M_z}$", '$R_{{\rm COP}_x}$'];
     units = ["N", "N", "N.m", "m"];
-    opts.title = @(n) {names(n), 'interpreter', 'latex'};
-    opts.xlim = @(n){[t_filt(1), t_filt(end)]};
-    opts.xlabel = @(n) {"$t$[s]", 'interpreter', 'latex'};
-    opts.ylabel = @(n) {sprintf("%s [%s]", names(n), units(n)), 'interpreter', 'latex'};
-    plot_vector_quantities_opts_shape(t_filt, [f_grf_model([1,2,6], :); cop_model], [], opts, [2, 2], 'b', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm AT Model}$');
-    plot_vector_quantities_opts_shape(t_filt, [f_grf_fp([1,2,6], :); cop_fp], [], opts, [2, 2], 'r', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm Forceplate}$');
-    plot_vector_quantities_opts_shape(t_filt, [f_grf_dim([1,2,6], :); cop_dim], [], opts, [2, 2], 'g', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm DIM Model}$');
+    plotopts = [];
+    plotopts.title = @(n) {names(n), 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.xlim = @(n){[time_vec(1), time_vec(end)]};
+    plotopts.xlabel = @(n) {"$t$[s]", 'interpreter', 'latex', 'fontsize', 13};
+    plotopts.ylabel = @(n) {sprintf("%s [%s]", names(n), units(n)), 'interpreter', 'latex', 'fontsize', 13};
+    plot_vector_quantities_opts_shape(time_vec, [f_grf_model([1,2,6], :); cop_model], [], plotopts, [2, 2], 'b', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm AT Model}$');
+    plot_vector_quantities_opts_shape(time_vec, [f_grf_fp([1,2,6], :); cop_fp], [], [], [2, 2], 'r', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm Forceplate}$');
+    plot_vector_quantities_opts_shape(time_vec, [f_grf_dim([1,2,6], :); cop_dim], [], [], [2, 2], 'g', 'DisplayName', '$(f, \tau, {\rm COP})_{\rm DIM Model}$');
     legend('interpreter', 'latex', 'location', 'best');
     
+    %% Load the numeric model result
+    % Load the human model parameters
+    identifiedHumanModel = dimModel.computeNumericalModel(dim_sol);
+    % Load the 
+    identified_base_r_base_fp = dimModel.compute_base_r_base_fp(dim_sol);
+    identified_markers_r_base_fp = base_R_markers.' * identified_base_r_base_fp;
+    identified_markers_r_markers_fp = markers_r_markers_base + identified_markers_r_base_fp;
+    markers_r_markers_fp
+    identified_markers_r_markers_fp
+    %% Barplot the retrieved parameters
+    
+    % Plot the masses
+    % Names of the body parts
+    names = ["Feet", "Shanks", "Thighs", "Pelvis-Abdomen", "Thorax", "Upper-arms", "Forearms", "Hands", "Neck-Head"];
+    % Data vector
+    mass = [...
+    [currHumanModel.MFOOT, currHumanModel.M, currHumanModel.MHAND, currHumanModel.MHEAD];
+    [identifiedHumanModel.MFOOT, identifiedHumanModel.M, identifiedHumanModel.MHAND, identifiedHumanModel.MHEAD];
+    ].';
+    % Figure plot
+    fig_M = figure('Position', [100, 50, 1280, 720]);
+    massbar = bar(mass);
+    % Aesthetics
+    xticklabels(names);
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex'; % latex for x-axis
+    xlabel("Body parts", 'interpreter', 'latex', 'fontsize', 13);
+    ylabel("Segment masses [kg]", 'interpreter', 'latex', 'fontsize', 13);
+    legend("Anthropometric Tables", "Dynamic Identification", 'interpreter', 'latex', 'fontsize', 13);
+    % Title
+    titlestring = {sprintf("Subject %s segment masses:", subj)};
+    title(titlestring, 'interpreter', 'latex', 'fontsize', 13);
+    
+    % Plot the inertias
+    % Names of the body parts
+    names = ["Feet", "Shanks", "Thighs", "Pelvis-Abdomen", "Thorax", "Upper-arms", "Forearms", "Hands", "Neck-Head"];
+    % Data vector
+    inertias = [...
+    [currHumanModel.IzzFOOT, currHumanModel.Izz, currHumanModel.IzzHAND, currHumanModel.IzzHEAD];
+    [identifiedHumanModel.IzzFOOT, identifiedHumanModel.Izz, identifiedHumanModel.IzzHAND, identifiedHumanModel.IzzHEAD];
+    ].';
+    % Figure plot
+    fig_Izz = figure('Position', [100, 50, 1280, 720]);
+    inertiabar = bar(inertias);
+    % Aesthetics
+    xticklabels(names);
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex'; % latex for x-axis
+    xlabel("Body parts", 'interpreter', 'latex', 'fontsize', 13);
+    ylabel("Segment inertias [kg.m$^2$]", 'interpreter', 'latex', 'fontsize', 13);
+    legend("Anthropometric Tables", "Dynamic Identification", 'interpreter', 'latex', 'fontsize', 13);
+    % Title
+    titlestring = {sprintf("Subject %s segment inertias:", subj)};
+    title(titlestring, 'interpreter', 'latex', 'fontsize', 13);
+    
+    % Plot the COMs
+    % Names of the body parts
+    names = ["Feet", "Shanks", "Thighs", "Pelvis-Abdomen", "Thorax", "Upper-arms", "Forearms", "Hands", "Neck-Head"];
+    % Data vector
+    comsx = [...
+    [currHumanModel.CoMFOOT(1), currHumanModel.CoM(1, :), currHumanModel.CoMHAND(1), currHumanModel.CoMHEAD(1)];
+    [identifiedHumanModel.CoMFOOT(1), identifiedHumanModel.CoM(1, :), identifiedHumanModel.CoMHAND(1), identifiedHumanModel.CoMHEAD(1)];
+    ].';
+    comsy = [...
+    [currHumanModel.CoMFOOT(2), currHumanModel.CoM(2, :), currHumanModel.CoMHAND(2), currHumanModel.CoMHEAD(2)];
+    [identifiedHumanModel.CoMFOOT(2), identifiedHumanModel.CoM(2, :), identifiedHumanModel.CoMHAND(2), identifiedHumanModel.CoMHEAD(2)];
+    ].';
+    % Figure plot
+    fig_CoM = figure('Position', [100, 50, 1280, 720]);
+    % Subplot for X axis coms
+    subplot(2, 1, 1);
+    comsxbar = bar(comsx);
+    % Aesthetics
+    xticklabels(names);
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex'; % latex for x-axis
+    xlabel("Body parts", 'interpreter', 'latex', 'fontsize', 13);
+    ylabel("Segment X-axis CoM positions [m]", 'interpreter', 'latex', 'fontsize', 13);
+    % Title
+    titlestring = {sprintf("Subject %s segment CoM positions along segment X-axis:", subj)};
+    title(titlestring, 'interpreter', 'latex', 'fontsize', 13);
+    
+    % Subplot for Y axis coms
+    subplot(2, 1, 2);
+    comsybar = bar(comsy);
+    % Aesthetics
+    xticklabels(names);
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex'; % latex for x-axis
+    xlabel("Body parts", 'interpreter', 'latex', 'fontsize', 13);
+    ylabel("Segment Y-axis CoM positions [m]", 'interpreter', 'latex', 'fontsize', 13);
+    legend("Anthropometric Tables", "Dynamic Identification", 'interpreter', 'latex', 'fontsize', 13);
+    % Title
+    titlestring = {sprintf("Subject %s segment CoM positions along segment Y-axis:", subj)};
+    title(titlestring, 'interpreter', 'latex', 'fontsize', 13);
+    
+    % Figure saving 
+    figname_L_time = sprintf("%sSegment_Lenths_in_Time.fig", subject_output_folderpath);
+    saveas(fig_L_time, figname_L_time);
+    figname_L = sprintf("%sSegment_Lenths.fig", subject_output_folderpath);
+    saveas(fig_L, figname_L);
+    figname_kin_residuals = sprintf("%sKinematic_Residuals.fig", subject_output_folderpath);
+    saveas(fig_kin_residuals, figname_kin_residuals);
+    figname_dyn_residuals = sprintf("%sDynamic_Residuals.fig", subject_output_folderpath);
+    saveas(fig_dyn_residuals, figname_dyn_residuals);
+    figname_M = sprintf("%sSegment_Masses.fig", subject_output_folderpath);
+    saveas(fig_M, figname_M);
+    figname_Izz = sprintf("%sSegment_Inertias.fig", subject_output_folderpath);
+    saveas(fig_Izz, figname_Izz);
+    figname_CoM = sprintf("%sSegment_Center_of_Mass_Positions.fig", subject_output_folderpath);
+    saveas(fig_CoM, figname_CoM);
+    
+    % Store results
+    Calibration.(subj).humanModel = identifiedHumanModel;
+    Calibration.(subj).q = q_filt;
 end
+
+% Savename
+calibration_output_filepath = sprintf("%scalibrated.mat", common_output_folderpath);
+save(calibration_output_filepath, "Calibration");
 %%
 
 % %%
