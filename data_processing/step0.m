@@ -155,7 +155,7 @@ SamplingFrequency = 100;
 NO_SUBJECTS = 7;
 
 % Define the rotation matrix from the OptiTrack frame to the Body Frame
-RMarkers = roty(180);
+base_R_markers = roty(180);
 
 % Forceplate data storage
 FP_1st_DATA_ROW = 33;
