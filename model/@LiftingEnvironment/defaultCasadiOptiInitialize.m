@@ -22,8 +22,6 @@ WristToBoxGripPointVector = opti.parameter(2, 1);
 JointAnglesInitial = opti.parameter(6, 1);
 JointAnglesFinal = opti.parameter(6, 1);
 
-disp(opti)
-
 % Just store them in the object
 obj.BoxWidth = BoxWidth;
 obj.BoxHeight = BoxHeight;
