@@ -31,6 +31,11 @@ classdef InverseKinematicsHumanModel6DOF
         % Markers object
         Markers
         
+        % Previous sample angles (for joint velocity normalization)
+        q_prev(6, :)
+        % Normalization constant
+        velocityNormalizationConstant(1, 1)
+        
         % Optimization functions        
         % Cost function object
         costFunction(1, 1)      
@@ -52,7 +57,10 @@ classdef InverseKinematicsHumanModel6DOF
         cf_back    
         cf_rsho    
         cf_relb    
-        cf_rwri    
+        cf_rwri
+        % Angle velocity residuals
+        res_dq
+        cf_dq
     end
     
     methods
@@ -99,7 +107,6 @@ classdef InverseKinematicsHumanModel6DOF
                 obj.q = obj.opti.variable(6, nbSamples);                
             end
                 
-            
             % Create human model with default kinematic points
             obj.casadiHumanModel = HumanModel6DOF();
             obj.casadiHumanModel.L = obj.L;
@@ -136,9 +143,33 @@ classdef InverseKinematicsHumanModel6DOF
             obj.cf_rsho = sum(sum(obj.res_rsho.^2) ./ (2*nbSamples));
             obj.cf_relb = sum(sum(obj.res_relb.^2) ./ (2*nbSamples));
             obj.cf_rwri = sum(sum(obj.res_rwri.^2) ./ (2*nbSamples));
+            % Angle velocity residuals
+            % Normalization constant
+            obj.velocityNormalizationConstant = obj.opti.parameter(1, 1);
+            % For more than one sample
+            if nbSamples > 1
+                % Velocity residuals dont take a parameter
+                obj.q_prev = [];
+                % Compute velocity residuals
+                obj.res_dq = diff(obj.q, 1, 2);
+                obj.res_dq = obj.res_dq(:);
+                % Angle velocity cost function
+                obj.cf_dq = sum(sum(obj.res_dq.^2) ./ (2 * 6 * nbSamples));
+            % When we have exactly one sample
+            elseif nbSamples == 1
+                % Velocity residual is defined by a parameter
+                obj.q_prev = obj.opti.parameter(6, 1);
+                % Compute velocity residual
+                obj.res_dq = obj.q - obj.q_prev;
+                % Angle velocity cost function
+                obj.cf_dq = sum(obj.res_dq.^2) ./ (2 * 6);                
+            end
             % Cost function
-            obj.costFunction = obj.cf_rkne + obj.cf_rgtr + obj.cf_back + ...
-                               obj.cf_rsho + obj.cf_relb + obj.cf_rwri;
+            obj.costFunction = 3*obj.cf_rkne + 3*obj.cf_rgtr + 3*obj.cf_back + ...
+                               obj.cf_rsho + obj.cf_relb + obj.cf_rwri + ...
+                               obj.velocityNormalizationConstant * obj.cf_dq;
+%             obj.costFunction = obj.cf_rkne + obj.cf_rgtr + obj.cf_back + ...
+%                                obj.cf_rsho + obj.cf_relb + obj.cf_rwri;
                            
             % Add to opti object
             obj.opti.minimize(obj.costFunction);
@@ -194,7 +225,7 @@ classdef InverseKinematicsHumanModel6DOF
             end
         end
         
-        function obj = instantiateParameters(obj, Markers, q, L, varargin)
+        function obj = instantiateParameters(obj, Markers, q, L, velocityNormalization, varargin)
             %modeFlag == 1:
             %   obj = instantiateParameters(obj, Markers, q0, L, LowerJointLimits, UpperJointLimits)
             %modeFlag == 2:
@@ -204,7 +235,7 @@ classdef InverseKinematicsHumanModel6DOF
 
             if obj.modeFlag == 1
                 % Check inputs
-                if nargin ~= 6
+                if nargin ~= 7
                     error("modeFlag == 1: Call obj = instantiateParameters(obj, Markers, q0, L, LowerJointLimits, UpperJointLimits)");
                 end
                 
@@ -222,7 +253,7 @@ classdef InverseKinematicsHumanModel6DOF
                 obj.opti.set_value(obj.L, L);
             elseif obj.modeFlag == 2
                 % Check inputs
-                if nargin ~= 6
+                if nargin ~= 7
                     error("modeFlag == 2: Call instantiateParameters(obj, Markers, q, L0, LowerLengthLimits, UpperLengthLimits)");
                 end
                 
@@ -240,7 +271,7 @@ classdef InverseKinematicsHumanModel6DOF
                 obj.opti.set_initial(obj.L, L);
             elseif obj.modeFlag == 3
                 % Check inputs
-                if nargin ~= 8
+                if nargin ~= 9
                     error("modeFlag == 3: Call obj = instantiateParameters(obj, Markers, q0, L0, LowerJointLimits, UpperJointLimits, LowerLengthLimits, UpperLengthLimits)");
                 end
                 
@@ -263,6 +294,19 @@ classdef InverseKinematicsHumanModel6DOF
             end
             
             % Set parameters unaffected by modeFlag
+            % Set the velocity normalization constant
+            obj.opti.set_value(obj.velocityNormalizationConstant, velocityNormalization);
+            % For more than one sample
+            if obj.nbSamples > 1
+                % Velocity residuals dont take a parameter, so don't do
+                % anything
+                obj.q_prev = [];
+            % When we have exactly one sample
+            elseif obj.nbSamples == 1
+                % Velocity residual are defined by a parameter and set it
+                obj.opti.set_value(obj.q_prev, q);               
+            end
+            
             % Instantiate markers
             markerNames = fieldnames(obj.Markers.BODY);
             

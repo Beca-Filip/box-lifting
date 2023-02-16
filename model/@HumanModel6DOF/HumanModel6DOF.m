@@ -195,6 +195,7 @@ classdef HumanModel6DOF
         obj = setInertialParametersFromAnthropometricTables(obj, weight, height);
         
         % Information getters
+        [LowerJointLimits, UpperJointLimits] = defaultJointLimits(obj);
         [LowerTorqueLimits, UpperTorqueLimits] = defaultTorqueLimits(obj);
         [HeelPosition, ToePosition] = defaultHeelAndToePositions(obj);
         
