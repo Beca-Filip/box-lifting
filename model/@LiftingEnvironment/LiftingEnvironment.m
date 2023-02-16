@@ -28,7 +28,7 @@ classdef LiftingEnvironment
     end
     
     methods
-        function obj = LiftingEnvironment(initMethod)
+        function obj = LiftingEnvironment(initMethod, opti)
             %LIFTINGENVIRONMENT Construct an instance of this class
             %
             
@@ -37,8 +37,8 @@ classdef LiftingEnvironment
                 return
             end
             
-            if strcmp(initMethod, "casadi.SX")
-                obj = obj.defaultCasadiInitialize();
+            if strcmp(initMethod, "casadi") || strcmp(initMethod, "casadi.SX") || strcmp(initMethod, "casadi.MX")
+                obj = obj.defaultCasadiOptiInitialize(opti);
                 return
             end
             
@@ -49,6 +49,9 @@ classdef LiftingEnvironment
         [TableWidth, TableHeight, TableCenterCoordinates] = defaultTableParameters(obj);
         [WristInitialPosition, WristFinalPosition] = defaultWristPositionParameters(obj);
         [WristToBoxGripPointVector] = defaultGripPointParameters(obj);
+        
+        % Information getters
+        f = getExternalWrenches(obj, q);
         
         % Initializers
         obj = defaultNumericInitialize(obj);
