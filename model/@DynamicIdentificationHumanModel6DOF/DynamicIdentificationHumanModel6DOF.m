@@ -208,7 +208,8 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.cf_mz = sum(sum(obj.res_mz.^2) ./ (2*nbSamples));
             obj.cf_cop = sum(sum(obj.res_cop.^2) ./ (2*nbSamples));
             
-            obj.costFunction = obj.cf_fx + obj.cf_fy + obj.cf_mz*100 + obj.cf_cop*10000;
+%             obj.costFunction = obj.cf_fx + obj.cf_fy + obj.cf_mz + obj.cf_cop;
+            obj.costFunction = obj.cf_fx + obj.cf_fy + 100*obj.cf_mz;
 %             obj.costFunction = obj.cf_cop*1e4; % in [cm^2]
 %             obj.costFunction = obj.cf_mz; % in [N.m^2]
             
@@ -217,11 +218,11 @@ classdef DynamicIdentificationHumanModel6DOF
             
             % Calculate the constraints
             % Define the reference deviation for parameters
-            obj.refDeviation = 0.3;
+            obj.refDeviation = 0.2;
             % Define the total mass deviation
             obj.totalMassDeviationFactor = 0.02;
             % Define the base to forceplate frame possible deviation
-            obj.baseToForceplateFrameMaxDeviation = 0.05 * ones(3, 1);
+            obj.baseToForceplateFrameMaxDeviation = 1 * ones(3, 1);
             
             % Define the total mass constraint
             obj.totalMassConstraint = [...
@@ -239,6 +240,12 @@ classdef DynamicIdentificationHumanModel6DOF
             -obj.MHEAD + (1 - obj.refDeviation) * obj.casadiHumanModelRef.MHEAD;
              obj.MHEAD - (1 + obj.refDeviation) * obj.casadiHumanModelRef.MHEAD;
             ];
+%             obj.massLimitConstraints = [...
+%             -obj.M.' - obj.casadiHumanModelRef.M.';
+%              obj.MFOOT - obj.casadiHumanModelRef.MFOOT;
+%              obj.MHAND - obj.casadiHumanModelRef.MHAND;
+%              obj.MHEAD - obj.casadiHumanModelRef.MHEAD;
+%             ];
             % Inertia limit constraints
             obj.inertiaLimitConstraints = [...
             -obj.Izz.' + (1 - obj.refDeviation) * obj.casadiHumanModelRef.Izz.';
@@ -250,6 +257,12 @@ classdef DynamicIdentificationHumanModel6DOF
             -obj.IzzHEAD + (1 - obj.refDeviation) * obj.casadiHumanModelRef.IzzHEAD;
              obj.IzzHEAD - (1 + obj.refDeviation) * obj.casadiHumanModelRef.IzzHEAD;
             ];
+%             obj.inertiaLimitConstraints = [...
+%              obj.Izz.' - obj.casadiHumanModelRef.Izz.';
+%              obj.IzzFOOT - obj.casadiHumanModelRef.IzzFOOT;
+%              obj.IzzHAND - obj.casadiHumanModelRef.IzzHAND;
+%              obj.IzzHEAD - obj.casadiHumanModelRef.IzzHEAD;
+%             ];
             % CoM limit constraints
             %%% CAREFUL: HERE WE ALLOW THE ESTIMATION TO VARY W.R.T.
             %%% SEGMENT LENGTH
@@ -263,17 +276,18 @@ classdef DynamicIdentificationHumanModel6DOF
             -obj.CoMHEAD(:) + (obj.casadiHumanModelRef.CoMHEAD(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
              obj.CoMHEAD(:) - (obj.casadiHumanModelRef.CoMHEAD(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
             ];
+%             obj.centerOfMassLimitConstraints = [...
+%              obj.CoM(:) - obj.casadiHumanModelRef.CoM(:);
+%              obj.CoMFOOT(:) - obj.casadiHumanModelRef.CoMFOOT(:);
+%              obj.CoMHAND(:) - obj.casadiHumanModelRef.CoMHAND(:);
+%              obj.CoMHEAD(:) - obj.casadiHumanModelRef.CoMHEAD(:);
+%             ];
             % Torque constraints
             obj.jointTorqueConstraints = [...
             -obj.tau(:) + repmat(obj.casadiHumanModelRef.LowerTorqueLimits, [nbSamples, 1]);
              obj.tau(:) - repmat(obj.casadiHumanModelRef.UpperTorqueLimits, [nbSamples, 1]);
             ];
             % Displacement of model and forceplate constraints
-            %%% Careful: use of abs
-%             obj.displacementOfModelAndForceplateConstraints = [...
-%             -abs(obj.base_r_base_fp) + (1 - obj.refDeviation) * abs(obj.base_r_base_fp_ref);
-%              abs(obj.base_r_base_fp) - (1 + obj.refDeviation) * abs(obj.base_r_base_fp_ref);
-%             ];
             obj.displacementOfModelAndForceplateConstraints = [...
              obj.base_r_base_fp - obj.base_r_base_fp_ref;
             ];
@@ -283,6 +297,10 @@ classdef DynamicIdentificationHumanModel6DOF
 %             ];
         
             % Add to opti object
+%             obj.opti.subject_to(obj.totalMassConstraint == 0);
+%             obj.opti.subject_to(obj.massLimitConstraints == 0);
+%             obj.opti.subject_to(obj.inertiaLimitConstraints == 0);
+%             obj.opti.subject_to(obj.centerOfMassLimitConstraints == 0);
             obj.opti.subject_to(obj.totalMassConstraint <= 0);
             obj.opti.subject_to(obj.massLimitConstraints <= 0);
             obj.opti.subject_to(obj.inertiaLimitConstraints <= 0);
