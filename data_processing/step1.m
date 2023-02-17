@@ -61,7 +61,6 @@ for numSubj = 2 : NO_SUBJECTS
     
     % Get number of samples
     nbSamples = Calibration.(subj).NumberSamples;
-%     nbSamples = 1000;
     
     % Make a time vector rate
     SamplingTime = Calibration.(subj).SamplingTime;
