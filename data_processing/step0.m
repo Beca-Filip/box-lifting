@@ -348,17 +348,47 @@ for numFile = 3 : length(segmentation_filepaths)
     if contains(segmentation_filepaths(numFile), "Lifting", 'IgnoreCase', true) && ...
        ~contains(segmentation_filepaths(numFile), "SquatLifting", 'IgnoreCase', true)
         Lifting.(subj).raw_segmentation_filename = segmentation_filepaths(numFile);
-        Lifting.(subj).segmentationTimeLabels = SG_TIME_LABELS;
-        Lifting.(subj).segmentationTimes_Set1 = cell2mat(cellData(SG_LIFTING_SET1_ROWS, SG_TIME_COLS));
-        Lifting.(subj).segmentationTimes_Set2 = cell2mat(cellData(SG_LIFTING_SET2_ROWS, SG_TIME_COLS));
-        Lifting.(subj).segmentationTimes_Set3 = cell2mat(cellData(SG_LIFTING_SET3_ROWS, SG_TIME_COLS));
-        Lifting.(subj).segmentationTimes_Set4 = cell2mat(cellData(SG_LIFTING_SET4_ROWS, SG_TIME_COLS));
+        Lifting.(subj).Segmentation.TimeLabels = SG_TIME_LABELS;
+        % For each rep of set 1
+        for numRep = 1 : length(SG_LIFTING_SET1_ROWS)            
+            % Get the rep name
+            rep = sprintf("Rep%d", numRep);
+            % Store data
+            Lifting.(subj).Segmentation.Set1.(rep) = cell2mat(cellData(SG_LIFTING_SET1_ROWS(numRep), SG_TIME_COLS));
+        end
+        % For each rep of set 2
+        for numRep = 1 : length(SG_LIFTING_SET2_ROWS)            
+            % Get the rep name
+            rep = sprintf("Rep%d", numRep);
+            % Store data
+            Lifting.(subj).Segmentation.Set2.(rep) = cell2mat(cellData(SG_LIFTING_SET2_ROWS(numRep), SG_TIME_COLS));
+        end
+        % For each rep of set 3
+        for numRep = 1 : length(SG_LIFTING_SET3_ROWS)            
+            % Get the rep name
+            rep = sprintf("Rep%d", numRep);
+            % Store data
+            Lifting.(subj).Segmentation.Set3.(rep) = cell2mat(cellData(SG_LIFTING_SET3_ROWS(numRep), SG_TIME_COLS));
+        end
+        % For each rep of set 4
+        for numRep = 1 : length(SG_LIFTING_SET1_ROWS)            
+            % Get the rep name
+            rep = sprintf("Rep%d", numRep);
+            % Store data
+            Lifting.(subj).Segmentation.Set4.(rep) = cell2mat(cellData(SG_LIFTING_SET4_ROWS(numRep), SG_TIME_COLS));
+        end
     end
     
     if contains(segmentation_filepaths(numFile), "SquatLifting_", 'IgnoreCase', true)
         SquatLifting.(subj).raw_segmentation_filename = segmentation_filepaths(numFile);
-        SquatLifting.(subj).segmentationTimeLabels = SG_TIME_LABELS;
-        SquatLifting.(subj).segmentationTimes_Set1 = cell2mat(cellData(SG_SQUATLIFTING_SET1_ROWS, SG_TIME_COLS));
+        SquatLifting.(subj).Segmentation.TimeLabels = SG_TIME_LABELS;
+        % For each rep of set 1
+        for numRep = 1 : length(SG_SQUATLIFTING_SET1_ROWS)            
+            % Get the rep name
+            rep = sprintf("Rep%d", numRep);
+            % Store data
+            SquatLifting.(subj).Segmentation.Set1.(rep) = cell2mat(cellData(SG_SQUATLIFTING_SET1_ROWS(numRep), SG_TIME_COLS));
+        end
     end
 end
 fprintf("\n");
