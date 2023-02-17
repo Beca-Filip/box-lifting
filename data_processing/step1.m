@@ -167,6 +167,7 @@ for numSubj = 2 : NO_SUBJECTS
     ikModel2.opti.solver('ipopt', sol_opt);
 
     %%% PERFORM INITIAL JOINT ANGLE IK on all samples
+    fprintf("IK iteration 0:\t");
     % Display progress
     fprintf("Samples %05d/%05d.", 0, nbSamples);
     % For all samples
@@ -291,10 +292,11 @@ for numSubj = 2 : NO_SUBJECTS
         new_mse_2_1 = sum(sum(residuals_2_1.^2) ./ nbSamples);
         new_mse_2_2 = sum(sum(residuals_2_2.^2) ./ nbSamples);
         % If mse decreased by less than 1 percent break
-        if (new_mse_2_1 / mse_2_1) > lowerDecreaseFactorThreshold
+        decreaseQuotientVector = [(new_mse_2_1 / mse_2_1), (new_mse_2_2 / mse_2_2)];
+        if min(decreaseQuotientVector) > lowerDecreaseFactorThreshold
             break;
         else
-            fprintf("Decrease factor: %.2f \n", 1-(new_mse_2_1 / mse_2_1));
+            fprintf("Decrease factor: %.2f \n", 1-min(decreaseQuotientVector));
             mse_2_1 = new_mse_2_1;
             mse_2_2 = new_mse_2_2;
         end
