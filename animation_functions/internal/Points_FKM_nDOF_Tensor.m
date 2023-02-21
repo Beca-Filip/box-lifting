@@ -100,5 +100,27 @@ for jj = 2 : n
     Gy = Gy + L(jj) .* sq;
 end
 
+% For the last joint
+jj = n+1;
+
+% Get the points belonging to jjth segment and the number of them
+Pjj = find((PC == jj));
+Njj = numel(Pjj);
+
+% For each point belonging to the first segment
+for kk = 1 : Njj
+    % Get local X and Y coordinates of the current point
+    Xc = C(1, Pjj(kk));    % X coordinate of the points who're children to segment jj (along the segment)
+    Yc = C(2, Pjj(kk));    % Y coordinate of the points who're children to segment jj (perpendicular to the segment)
+
+    % Calculate the global X and Y coordinates of the current point by
+    % adding its position relative to its parent segment frame to the
+    % global position of the parent segment frame
+    PTS(1, :, Pjj(kk)) = Gx + Xc .* cq - Yc .* sq;
+    PTS(2, :, Pjj(kk)) = Gy + Xc .* sq + Yc .* cq;
+end
+
+
+
 end
 
