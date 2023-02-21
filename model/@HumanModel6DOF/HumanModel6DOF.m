@@ -204,8 +204,12 @@ classdef HumanModel6DOF
         [V, J] = forwardKinematicVelocityModel(obj,q,dq);
         [A, J, dJ] = forwardKinematicAccelerationModel(obj,q,dq, ddq);
         
+        % Collision Spheres
         CTR =  collisionForwardKinematicModel(obj, q);
         D   =  collisionSpheresDistances(obj, q);
+        spheres = getSpheresStructureForAnimation(obj);
+        
+        % Dynamics
         [tau, f_grf] =  inverseDynamicModel(obj, q, dq, ddq, fFOOT, fHAND);
     end
 end
