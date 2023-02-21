@@ -5,7 +5,7 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
     %Extract geometrical parameters using the table from Dumas, 2018 for
     %male subjects, along with the subject height and weight. The table 
     %parameters are stored in a file called Parametres.xlsx.
-    nargin
+    
     %% Treat input weight and height
     if nargin == 3
         obj.WEIGHT = weight;
