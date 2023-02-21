@@ -1,8 +1,8 @@
 function sphere = createBoxCollisionSphere(obj)
 
-name = "Box sphere";
+name = "Box Sphere";
 rigidlink = 7;
-frame = 7;
+frame = 0;
 pos = [obj.WristToBoxGripPointVector; 0];
 radius = max(obj.BoxWidth/2,obj.BoxHeight/2);
 
