@@ -64,7 +64,7 @@ for numSubj = 2 : NO_SUBJECTS
     defaultHumanModel = HumanModel6DOF(R, p, WEIGHT, HEIGHT);
     
     % Define filtering parameters for raw data
-    filt_fs = SamplingFrequency;
+    filt_fs = Lifting.(subj).SamplingFrequency;
     filt_cutoff = 5;
     filt_order = 5;
     
