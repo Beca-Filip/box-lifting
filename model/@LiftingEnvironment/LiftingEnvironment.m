@@ -51,7 +51,9 @@ classdef LiftingEnvironment
         [WristToBoxGripPointVector] = defaultGripPointParameters(obj);
         
         % Information getters
-        f = getExternalWrenches(obj, q);
+        f = getExternalWrenches(obj, q, Gravity);
+        collisionSphere = createBoxCollisionSphere(obj);
+        collisionSphere = createTableCollisionSphere(obj);
         
         % Initializers
         obj = defaultNumericInitialize(obj);
