@@ -12,7 +12,7 @@ function obj = setDefaultCollisionSpheres(obj)
         rigidlink = link;
         frame = link;
         pos = [obj.CoM(:, link); 0];
-        radius = obj.L(link) * obj.LengthToRadiiFactor;
+        radius = obj.L(link) / 2 * obj.LengthToRadiiFactor;
         
         S = CollisionSphere6DOF(name, rigidlink, frame, pos, radius);
         obj.CS = [obj.CS, S];
