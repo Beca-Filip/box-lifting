@@ -18,23 +18,23 @@ function obj = setDefaultCollisionSpheres(obj)
         obj.CS = [obj.CS, S];
     end
     
-    % Hand link origin
-    name = sprintf("%s (Link 8) CoM", obj.TreeLinkNames(8));
-    rigidlink = 6;
-    frame = 6;
-    pos = [obj.L(6); zeros(2, 1)] + [obj.CoMHAND; 0];
-    radius = obj.LHAND * obj.LengthToRadiiFactor;
-    
-    S = CollisionSphere6DOF(name, rigidlink, frame, pos, radius);
-    obj.CS = [obj.CS, S];
-    
-    % Head link origin
-    name = sprintf("%s (Link 9) CoM", obj.TreeLinkNames(9));
-    rigidlink = 4;
-    frame = 4;
-    pos = [obj.L(4); zeros(2, 1)] + [obj.CoMHEAD; 0];
-    radius = obj.LHEAD * obj.LengthToRadiiFactor;
-    
-    S = CollisionSphere6DOF(name, rigidlink, frame, pos, radius);
-    obj.CS = [obj.CS, S];
+%     % Hand link origin
+%     name = sprintf("%s (Link 8) CoM", obj.TreeLinkNames(8));
+%     rigidlink = 6;
+%     frame = 6;
+%     pos = [obj.L(6); zeros(2, 1)] + [obj.CoMHAND; 0];
+%     radius = obj.LHAND * obj.LengthToRadiiFactor;
+%     
+%     S = CollisionSphere6DOF(name, rigidlink, frame, pos, radius);
+%     obj.CS = [obj.CS, S];
+%     
+%     % Head link origin
+%     name = sprintf("%s (Link 9) CoM", obj.TreeLinkNames(9));
+%     rigidlink = 4;
+%     frame = 4;
+%     pos = [obj.L(4); zeros(2, 1)] + [obj.CoMHEAD; 0];
+%     radius = obj.LHEAD * obj.LengthToRadiiFactor;
+%     
+%     S = CollisionSphere6DOF(name, rigidlink, frame, pos, radius);
+%     obj.CS = [obj.CS, S];
 end
