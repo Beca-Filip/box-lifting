@@ -5,7 +5,7 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
     %Extract geometrical parameters using the table from Dumas, 2018 for
     %male subjects, along with the subject height and weight. The table 
     %parameters are stored in a file called Parametres.xlsx.
-    
+    nargin
     %% Treat input weight and height
     if nargin == 3
         obj.WEIGHT = weight;
@@ -42,16 +42,20 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
         % If current row name contains spaces replace with underscore
         fullTextData{ii+1, 1} = strrep(fullTextData{ii+1, 1}, ' ', '_');
 
+        % SEGMENT LENGTHS IN [m]
         % Create segment lengths (height * mean seg len / mean subj height)
         L.(fullTextData{ii+1, 1}) = numericData(ii, 1) * (HEIGHT/msh);
 
+        % SEGMENT MASSES IN [kg]
         % Create segment masses (weight * segm mass percentage / 100)
         M.(fullTextData{ii+1, 1}) = WEIGHT*(numericData(ii, 2)/100);
 
+        % COM POSITIONS IN [% Segment Length]
         % Create segment centers of mass in percentages (perc of seg length / 100)
         COM.(fullTextData{ii+1, 1}) = (numericData(ii, 3:5)/100).'; % Column vector
 
         % Create segment intertia matrices: 
+        % GYRATION MATRIX IN [% Segment Length]
         % a) Gyration matrix
         G = diag((numericData(ii, 6:8) / 100).^2) / 2;  % Divide by because of the symmetric addition a few lines down
         G(1, 2) = (numericData(ii, 9) / 100)^2;
@@ -59,7 +63,8 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
         G(2, 3) = (numericData(ii, 11) / 100)^2;
         G = G + G.';    % Make symmetric by addition
 
-        % b) 
+        % INERTIA MATRIX IN [m^2.kg]
+        % b) Inertia Matrix
         % (seg mass * seg len^2 * gyration matrix in percentages^2 / 100^2)
         IM.(fullTextData{ii+1, 1}) = M.(fullTextData{ii+1, 1}) * L.(fullTextData{ii+1, 1})^2 * G;
     end
@@ -88,6 +93,12 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
 
     % Segment names
     segments = fieldnames(COM);
+
+    %%%%%  WARNING
+    % GOOD: SEGMENT LENGTHS IN [m]
+    % GOOD: SEGMENT MASSES IN [kg]
+    % BAD:  COM POSITIONS IN [% Segment Length]
+    % GOOD: INERTIA MATRIX IN [m^2.kg]
 
     % For all segments
     for ii = 1 : length(segments)
@@ -129,12 +140,20 @@ function obj = setInertialParametersFromAnthropometricTables(obj, weight, height
         (( (COM.(segments{ii}) * L.(segments{ii})).' * (COM.(segments{ii}) * L.(segments{ii}))) * eye(3) - ...
         (COM.(segments{ii}) * L.(segments{ii})) * (COM.(segments{ii}) * L.(segments{ii})).');
     end
-
-
-    % For all segments
+    
+    %%%%%  WARNING
+    % COM POSITIONS IN [% Segment Length]
+    
+    % For all segments transpose the vectors
     for ii = 1 : length(segments)
         COM.(segments{ii}) = COM.(segments{ii}).';
     end
+    
+    % For all segments multiply by segment length
+    for ii = 1 : length(segments)
+        COM.(segments{ii}) = COM.(segments{ii}).' * L.(segments{ii});
+    end
+
 
     % Merge abdomen and pelvis
     % Length and mass
