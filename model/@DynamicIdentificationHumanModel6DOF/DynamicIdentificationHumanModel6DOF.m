@@ -38,8 +38,8 @@ classdef DynamicIdentificationHumanModel6DOF
         % HEAD moment of inertia scalar about the Z axis of the local link frame centered at the CoM, units [kg.m^2]
         IzzHEAD(1, 1)
         
-        % Vector from human base frame to force plate frame expressed in base frame
-        base_r_base_fp(3, 1)
+        % Vector from markers frame to force plate frame expressed in markers frame
+        markers_r_markers_fp(3, 1)
         
         
         %%% Optimization Parameters
@@ -47,10 +47,14 @@ classdef DynamicIdentificationHumanModel6DOF
         % model which are not variables, and contains reference values for
         % the variables
         casadiHumanModelRef(1, 1) HumanModel6DOF
-        % Reference vector from forceplate frame to base frame        
-        base_r_base_fp_ref(3, 1)
-        % Rotation matrix from forceplate frame to base frame
-        base_R_fp(3, 3)
+        % Reference vector from markers frame to force plate frame expressed in markers frame       
+        markers_r_markers_fp_ref(3, 1)
+        % Vectore from markers frame to base frame expressed in markers frame
+        markers_r_markers_base(3, 1)
+        % Rotation matrix from forceplate frame to markers frame
+        markers_R_fp(3, 3)
+        % Rotation matrix from markers frame to base frame
+        markers_R_base(3, 3)
         % Joint angles
         q(6, :)
         % Joint angular velocities
@@ -69,8 +73,8 @@ classdef DynamicIdentificationHumanModel6DOF
         refDeviation(1, 1)
         % Total mass deviation from ref
         totalMassDeviationFactor(1, 1)
-        % Base to forceplate frame possible deviation in [m]
-        baseToForceplateFrameMaxDeviation(3, 1);
+        % Possible deviation of the vector from the markers frame to the forceplate frame in [m]
+        maxDeviation_markers_r_markers_fp(3, 1);
         
         % Optimization functions        
         % Cost function object
@@ -85,25 +89,38 @@ classdef DynamicIdentificationHumanModel6DOF
         centerOfMassLimitConstraints(:, 1)
         % Torque constraints
         jointTorqueConstraints(:, 1)
-        % Displacement of model and forceplate constraints
-        displacementOfModelAndForceplateConstraints(:, 1)
+        % Displacement of forceplate constraints
+        displacementOfForceplateConstraints(:, 1)
         
         % Important subfunctions
         % Predicted joint torques
-        tau
-        % Predicted ground reaction forces
-        f_grf
-        % Predicted cop position
-        cop
+        tau(6, :)
+        % Predicted ground reaction forces in base frame
+        base_grf_model(6, :)
+        % Predicted ground reaction forces in markers frame
+        markers_grf_model(6, :)
+        % Predicted cop position in markers frame
+        markers_cop_model(1, :)
+        % Forceplate ground reaction forces in forceplate frame
+        fp_grf_fp(6, :)
+        % Forceplate ground reaction forces in markers frame
+        markers_grf_fp(6, :)
+        % Forceplate cop position in markers frame
+        markers_cop_fp(1, :)        
         % Residual objects
-        res_fx    
-        res_fy    
+        res_fx
+        res_fy
         res_mz
         res_cop
         cf_fx
         cf_fy
         cf_mz
         cf_cop
+        % Part of the cost function containing all residuals
+        residual_cost_function
+        % Part of the cost function representing the normalization on the 
+        % variation of wrenches from sample to sample
+        wrench_variation_normalization_term
     end
     
     methods
@@ -133,7 +150,7 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.CoMFOOT = obj.opti.variable(2, 1);
             obj.CoMHAND = obj.opti.variable(2, 1);
             obj.CoMHEAD = obj.opti.variable(2, 1);
-            obj.base_r_base_fp = obj.opti.variable(3, 1);
+            obj.markers_r_markers_fp = obj.opti.variable(3, 1);
                         
             % Use human model class for future calculations
             obj.casadiHumanModel = HumanModel6DOF();    %%% CAREFUL INITIALIZES ALL OTHER PARAMETERS TO DEFAULT VALUES
@@ -152,13 +169,18 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.casadiHumanModel.CoMHEAD = obj.CoMHEAD;
             
             % Allocate opti parameters
-            obj.base_R_fp = obj.opti.parameter(3, 3);
-            obj.base_r_base_fp_ref = obj.opti.parameter(3, 1);
+            % Spatial parameters
+            obj.markers_R_fp = obj.opti.parameter(3, 3);
+            obj.markers_R_base = obj.opti.parameter(3, 3);
+            obj.markers_r_markers_base = obj.opti.parameter(3, 1);
+            obj.markers_r_markers_fp_ref = obj.opti.parameter(3, 1);
             
+            % Joint angle parameters
             obj.q = obj.opti.parameter(6, nbSamples);
             obj.dq = obj.opti.parameter(6, nbSamples);
             obj.ddq = obj.opti.parameter(6, nbSamples);
             
+            % Reference forceplate data parameters
             obj.Forceplate.Forces = obj.opti.parameter(nbSamples, 3);
             obj.Forceplate.Moments = obj.opti.parameter(nbSamples, 3);
             obj.Forceplate.COP = obj.opti.parameter(nbSamples, 3);
@@ -185,44 +207,52 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.fFOOT = zeros(6, nbSamples);
             obj.fHAND = zeros(6, nbSamples);
             
-            % Perform the inverse dynamics
-            [obj.tau, obj.f_grf] = obj.casadiHumanModel.inverseDynamicModel(obj.q, obj.dq, obj.ddq, obj.fFOOT, obj.fHAND);
-            % Calculate COP_x position
-            obj.cop = obj.f_grf(6, :) ./ obj.f_grf(2, :);
+            % Perform the inverse dynamics to get predicted ground reaction
+            % forces
+            [obj.tau, obj.base_grf_model] = obj.casadiHumanModel.inverseDynamicModel(obj.q, obj.dq, obj.ddq, obj.fFOOT, obj.fHAND);
             
-            % Express the Forces and Moments and COP in the base frame
-            % Also transport the Moment and COP to be expressed with
-            % respect to the base frame
-            obj.TransportedForceplate = ForceplateRotateTranslate(obj.base_R_fp, obj.base_r_base_fp, obj.Forceplate);
+            % Extract ground reaction forces from the forceplate
+            obj.fp_grf_fp = [obj.Forceplate.Forces.'; obj.Forceplate.Moments.'];
+
+            % Transport ground reaction forces from the base frame to the markers frame
+            obj.markers_grf_model = WrenchesRotateTranslate(obj.markers_R_base, obj.markers_r_markers_base, obj.base_grf_model);
+
+            % Transport ground reaction forces from the forceplate frame to the markers frame
+            obj.markers_grf_fp = WrenchesRotateTranslate(obj.markers_R_fp, obj.markers_r_markers_fp, obj.fp_grf_fp);
+
+            % Calculate the predicted COP in the markers frame
+            obj.markers_cop_model = obj.markers_grf_model(6, :) ./ obj.markers_grf_model(2, :);
             
+            % Calculate the forceplate COP in the markers frame
+            obj.markers_cop_fp = obj.markers_grf_fp(6, :) ./ obj.markers_grf_fp(2, :);
             
             % Calculate the residuals
-            obj.res_fx = obj.f_grf(1, :).' - obj.TransportedForceplate.Forces(:, 1);
-            obj.res_fy = obj.f_grf(2, :).' - obj.TransportedForceplate.Forces(:, 2);
-            obj.res_mz = obj.f_grf(6, :).' - obj.TransportedForceplate.Moments(:, 3);
-            obj.res_cop = obj.cop.' - obj.TransportedForceplate.COP(:, 1);
+            obj.res_fx = obj.markers_grf_model(1, :).' - obj.markers_grf_fp(1, :).';
+            obj.res_fy = obj.markers_grf_model(2, :).' - obj.markers_grf_fp(2, :).';
+            obj.res_mz = obj.markers_grf_model(6, :).' - obj.markers_grf_fp(6, :).';
+            obj.res_cop = obj.markers_cop_model.' - obj.markers_cop_fp.';
             
             % Calculate the cost functions
-            obj.cf_fx = sum(sum(obj.res_fx.^2) ./ (2*nbSamples));
-            obj.cf_fy = sum(sum(obj.res_fy.^2) ./ (2*nbSamples));
-            obj.cf_mz = sum(sum(obj.res_mz.^2) ./ (2*nbSamples));
-            obj.cf_cop = sum(sum(obj.res_cop.^2) ./ (2*nbSamples));
+            obj.cf_fx = sum(sum(obj.res_fx.^2) ./ nbSamples);
+            obj.cf_fy = sum(sum(obj.res_fy.^2) ./ nbSamples);
+            obj.cf_mz = sum(sum(obj.res_mz.^2) ./ nbSamples);
+            obj.cf_cop = sum(sum(obj.res_cop.^2) ./ nbSamples);
             
-%             obj.costFunction = obj.cf_fx + obj.cf_fy + obj.cf_mz + obj.cf_cop;
-            obj.costFunction = obj.cf_fx + obj.cf_fy + 100*obj.cf_mz;
-%             obj.costFunction = obj.cf_cop*1e4; % in [cm^2]
-%             obj.costFunction = obj.cf_mz; % in [N.m^2]
+            obj.wrench_variation_normalization_term = sum((diff(obj.res_fx).^2 + diff(obj.res_fy).^2 + 100 * diff(obj.res_mz).^2) ./ (3 * nbSamples)); % "Variation Normalization"
+            obj.residual_cost_function  = obj.cf_fx + obj.cf_fy + 100*obj.cf_mz;
+            
+            obj.costFunction = obj.residual_cost_function + 100 * obj.wrench_variation_normalization_term;
             
             % Add to opti object
             obj.opti.minimize(obj.costFunction);
             
             % Calculate the constraints
             % Define the reference deviation for parameters
-            obj.refDeviation = 0.2;
+            obj.refDeviation = 0.4;
             % Define the total mass deviation
-            obj.totalMassDeviationFactor = 0.02;
-            % Define the base to forceplate frame possible deviation
-            obj.baseToForceplateFrameMaxDeviation = 1 * ones(3, 1);
+            obj.totalMassDeviationFactor = 0.04;
+            % Define the base to forceplate frame possible deviation in [m]
+            obj.maxDeviation_markers_r_markers_fp = [0.05; 0.3; 0.05];
             
             % Define the total mass constraint
             obj.totalMassConstraint = [...
@@ -288,13 +318,10 @@ classdef DynamicIdentificationHumanModel6DOF
              obj.tau(:) - repmat(obj.casadiHumanModelRef.UpperTorqueLimits, [nbSamples, 1]);
             ];
             % Displacement of model and forceplate constraints
-            obj.displacementOfModelAndForceplateConstraints = [...
-             obj.base_r_base_fp - obj.base_r_base_fp_ref;
+            obj.displacementOfForceplateConstraints = [...
+            -obj.markers_r_markers_fp + (obj.markers_r_markers_fp_ref - obj.maxDeviation_markers_r_markers_fp);
+             obj.markers_r_markers_fp - (obj.markers_r_markers_fp_ref + obj.maxDeviation_markers_r_markers_fp);
             ];
-%             obj.displacementOfModelAndForceplateConstraints = [...
-%             -obj.base_r_base_fp + (obj.base_r_base_fp_ref - obj.baseToForceplateFrameMaxDeviation);
-%              obj.base_r_base_fp - (obj.base_r_base_fp_ref + obj.baseToForceplateFrameMaxDeviation);
-%             ];
         
             % Add to opti object
 %             obj.opti.subject_to(obj.totalMassConstraint == 0);
@@ -306,19 +333,21 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.opti.subject_to(obj.inertiaLimitConstraints <= 0);
             obj.opti.subject_to(obj.centerOfMassLimitConstraints <= 0);
             obj.opti.subject_to(obj.jointTorqueConstraints <= 0);
-%             obj.opti.subject_to(obj.displacementOfModelAndForceplateConstraints <= 0);
-            obj.opti.subject_to(obj.displacementOfModelAndForceplateConstraints == 0);
+            obj.opti.subject_to(obj.displacementOfForceplateConstraints <= 0);
+%             obj.opti.subject_to(obj.displacementOfForceplateConstraints == 0);
         end
         
-        function obj = instantiateParameters(obj, Forceplate, q, dq, ddq, humanModelRef, base_R_fp, base_r_base_fp)
+        function obj = instantiateParameters(obj, Forceplate, q, dq, ddq, humanModelRef, markers_R_base, markers_R_fp, markers_r_markers_base, markers_r_markers_fp)
             
             % Set Forceplate parameters
             obj.opti.set_value(obj.Forceplate.Forces, Forceplate.Forces);
             obj.opti.set_value(obj.Forceplate.Moments, Forceplate.Moments);
             obj.opti.set_value(obj.Forceplate.COP, Forceplate.COP);
-            % Set rotation matrix from forceplate frame to base frame      
-            obj.opti.set_value(obj.base_r_base_fp_ref, base_r_base_fp);      
-            obj.opti.set_value(obj.base_R_fp, base_R_fp);
+            % Set rotation matrix from forceplate frame to base frame
+            obj.opti.set_value(obj.markers_r_markers_base, markers_r_markers_base);
+            obj.opti.set_value(obj.markers_r_markers_fp_ref, markers_r_markers_fp);
+            obj.opti.set_value(obj.markers_R_base, markers_R_base);
+            obj.opti.set_value(obj.markers_R_fp, markers_R_fp);
             % Set joint angles, velocities and accelerations
             obj.opti.set_value(obj.q, q);
             obj.opti.set_value(obj.dq, dq);
@@ -340,7 +369,7 @@ classdef DynamicIdentificationHumanModel6DOF
             obj.opti.set_initial(obj.CoMHAND, humanModelRef.CoMHAND);
             obj.opti.set_initial(obj.CoMHEAD, humanModelRef.CoMHEAD);
             % Set model base to force plate vector
-            obj.opti.set_initial(obj.base_r_base_fp, base_r_base_fp);
+            obj.opti.set_initial(obj.markers_r_markers_fp, markers_r_markers_fp);
         end
         
         function residual_norms = computeResidualNorms(obj, solutionObj)
@@ -351,12 +380,17 @@ classdef DynamicIdentificationHumanModel6DOF
             residual_norms = [residual_norms, sqrt(sum(solutionObj.value(obj.res_cop).^2, 2))];
         end
         
-        function f_grf = computeGRF(obj, solutionObj)
-            f_grf = solutionObj.value(obj.f_grf);
+        function base_grf_model = computeBaseGRFModel(obj, solutionObj)
+            base_grf_model = solutionObj.value(obj.base_grf_model);
         end
         
-        function base_r_base_fp = compute_base_r_base_fp(obj, solutionObj)
-            base_r_base_fp = solutionObj.value(obj.base_r_base_fp);
+        function [markers_grf_model, markers_grf_fp] = computeMarkersGRFModelAndForceplate(obj, solutionObj)
+            markers_grf_model = solutionObj.value(obj.markers_grf_model);
+            markers_grf_fp = solutionObj.value(obj.markers_grf_fp);
+        end
+        
+        function markers_r_markers_fp = compute_markers_r_markers_fp(obj, solutionObj)
+            markers_r_markers_fp = solutionObj.value(obj.markers_r_markers_fp);
         end
         
         function numericHumanModel = computeNumericalModel(obj, solutionObj)
