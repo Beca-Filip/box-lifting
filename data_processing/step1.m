@@ -293,6 +293,8 @@ for numSubj = 2 : NO_SUBJECTS
         % If mse decreased by less than 1 percent break
         decreaseQuotientVector = [(new_mse_2_1 / mse_2_1), (new_mse_2_2 / mse_2_2)];
         if min(decreaseQuotientVector) > lowerDecreaseFactorThreshold
+            fprintf("Decrease factor: %.2f \n", 1-min(decreaseQuotientVector));
+            fprintf("Quitting loop!\n");
             break;
         else
             fprintf("Decrease factor: %.2f \n", 1-min(decreaseQuotientVector));
