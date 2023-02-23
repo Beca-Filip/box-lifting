@@ -7,7 +7,9 @@ Trials = importdata("../../processed_data/Lifting/kinematically_calibrated_lifti
 
 % Initialize trial index
 TrialIndex = 1;
+TrialsWithIntersections = [];
 
+for TrialIndex = 1 : length(Trials)
 % Get segment lengths
 R = Trials(TrialIndex).humanModel.R;
 p = Trials(TrialIndex).humanModel.p;
@@ -36,8 +38,11 @@ Ts = mean(diff(Trials(TrialIndex).t));
 spheres = Trials(TrialIndex).humanModel.getSpheresStructureForAnimation();
 
 % Animate
+TrialIndex
 figure
 Animate_nDOF_Spheres(q, L, spheres, round(1.5*Ts, 2));
+pause(round(1.5*Ts, 2) * Trials(TrialIndex).nbSamples + 1);
+close
 
 bodySpheres = find(contains([Trials(TrialIndex).humanModel.CS.Name] ,"Link", "IgnoreCase", true));
 boxSphere = find(contains([Trials(TrialIndex).humanModel.CS.Name] ,"Box", "IgnoreCase", true));
@@ -48,14 +53,8 @@ D = Trials(TrialIndex).humanModel.collisionSpheresDistances(Trials(TrialIndex).q
 distBodyToBox = cell2mat(D(bodySpheres, boxSphere));
 distBoxToTable = cell2mat(D(boxSphere, tableSpheres).');
 
-figure;
-names = [Trials(TrialIndex).humanModel.CS(bodySpheres).Name];
-plotopts = [];
-plotopts.title = @(n) {sprintf("%s", names(n))};
-plot_vector_quantities_opts_shape(Trials(TrialIndex).t, distBodyToBox, [], plotopts, []);
+if any(distBoxToTable <= 0, 'all')
+    TrialsWithIntersections = [TrialIndex];
+end
 
-figure;
-names = [Trials(TrialIndex).humanModel.CS(tableSpheres).Name];
-plotopts = [];
-plotopts.title = @(n) {sprintf("%s", names(n))};
-plot_vector_quantities_opts_shape(Trials(TrialIndex).t, distBoxToTable, [], plotopts, []);
+end
