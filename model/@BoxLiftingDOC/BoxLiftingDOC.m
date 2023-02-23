@@ -63,6 +63,14 @@ classdef BoxLiftingDOC
         finalCartesianConstraints(:, 1)
         % Constraint function 7: collisionConstraints
         collisionConstraints(:, 1)
+        % Constraint function 8: torqueLowerLimitConstraints
+        torqueLowerLimitConstraints(:, 1)
+        % Constraint function 9: torqueUpperLimitConstraints
+        torqueUpperLimitConstraints(:, 1)
+        % Constraint function 10: copLowerLimitConstraints
+        copLowerLimitConstraints(:, 1)        
+        % Constraint function 11: copUpperLimitConstraints
+        copUpperLimitConstraints(:, 1)
         
         % Important quantities
         % Quantity 1: Joint angle trajectory
@@ -203,6 +211,8 @@ classdef BoxLiftingDOC
         obj = addInitialCartesianConstraints(obj);
         obj = addFinalCartesianConstraints(obj);
         obj = addCollisionConstraints(obj);
+        obj = addTorqueLimitConstraints(obj);
+        obj = addCopLimitConstraints(obj);
         
         % Cost function adders        
         obj = addSumSquaredJointVelocitiesCost(obj);
