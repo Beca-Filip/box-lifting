@@ -71,6 +71,9 @@ classdef DynamicIdentificationHumanModel6DOF
         
         % Parameter deviation from ref
         refDeviation(1, 1)
+        % Define CoM deviation in terms of the segment length
+        refDeviationCoMx(1, 1)
+        refDeviationCoMy(1, 1)
         % Total mass deviation from ref
         totalMassDeviationFactor(1, 1)
         % Possible deviation of the vector from the markers frame to the forceplate frame in [m]
@@ -248,11 +251,14 @@ classdef DynamicIdentificationHumanModel6DOF
             
             % Calculate the constraints
             % Define the reference deviation for parameters
-            obj.refDeviation = 0.4;
+            obj.refDeviation = 0.2;
+            % Define CoM deviation in terms of the segment length
+            obj.refDeviationCoMx = 0.2;
+            obj.refDeviationCoMy = 0.05;
             % Define the total mass deviation
             obj.totalMassDeviationFactor = 0.04;
             % Define the base to forceplate frame possible deviation in [m]
-            obj.maxDeviation_markers_r_markers_fp = [0.05; 0.3; 0.05];
+            obj.maxDeviation_markers_r_markers_fp = [0.05; 0.15; 0.05];
             
             % Define the total mass constraint
             obj.totalMassConstraint = [...
@@ -296,15 +302,33 @@ classdef DynamicIdentificationHumanModel6DOF
             % CoM limit constraints
             %%% CAREFUL: HERE WE ALLOW THE ESTIMATION TO VARY W.R.T.
             %%% SEGMENT LENGTH
+%             obj.centerOfMassLimitConstraints = [...
+%             -obj.CoM(:) + (obj.casadiHumanModelRef.CoM(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.L(:), [2, 1]));
+%              obj.CoM(:) - (obj.casadiHumanModelRef.CoM(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.L(:), [2, 1]));
+%             -obj.CoMFOOT(:) + (obj.casadiHumanModelRef.CoMFOOT(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LFOOT(:), [2, 1]));
+%              obj.CoMFOOT(:) - (obj.casadiHumanModelRef.CoMFOOT(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LFOOT(:), [2, 1]));
+%             -obj.CoMHAND(:) + (obj.casadiHumanModelRef.CoMHAND(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LHAND(:), [2, 1]));
+%              obj.CoMHAND(:) - (obj.casadiHumanModelRef.CoMHAND(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LHAND(:), [2, 1]));
+%             -obj.CoMHEAD(:) + (obj.casadiHumanModelRef.CoMHEAD(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
+%              obj.CoMHEAD(:) - (obj.casadiHumanModelRef.CoMHEAD(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
+%             ];        
             obj.centerOfMassLimitConstraints = [...
-            -obj.CoM(:) + (obj.casadiHumanModelRef.CoM(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.L(:), [2, 1]));
-             obj.CoM(:) - (obj.casadiHumanModelRef.CoM(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.L(:), [2, 1]));
-            -obj.CoMFOOT(:) + (obj.casadiHumanModelRef.CoMFOOT(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LFOOT(:), [2, 1]));
-             obj.CoMFOOT(:) - (obj.casadiHumanModelRef.CoMFOOT(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LFOOT(:), [2, 1]));
-            -obj.CoMHAND(:) + (obj.casadiHumanModelRef.CoMHAND(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LHAND(:), [2, 1]));
-             obj.CoMHAND(:) - (obj.casadiHumanModelRef.CoMHAND(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LHAND(:), [2, 1]));
-            -obj.CoMHEAD(:) + (obj.casadiHumanModelRef.CoMHEAD(:) - obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
-             obj.CoMHEAD(:) - (obj.casadiHumanModelRef.CoMHEAD(:) + obj.refDeviation * repmat(obj.casadiHumanModelRef.LHEAD(:), [2, 1]));
+            -obj.CoM(1, :).' + (obj.casadiHumanModelRef.CoM(1, :).' - obj.refDeviationCoMx * obj.casadiHumanModelRef.L.');
+             obj.CoM(1, :).' - (obj.casadiHumanModelRef.CoM(1, :).' + obj.refDeviationCoMx * obj.casadiHumanModelRef.L.');
+            -obj.CoMFOOT(1, :).' + (obj.casadiHumanModelRef.CoMFOOT(1, :).' - obj.refDeviationCoMx * obj.casadiHumanModelRef.LFOOT.');
+             obj.CoMFOOT(1, :).' - (obj.casadiHumanModelRef.CoMFOOT(1, :).' + obj.refDeviationCoMx * obj.casadiHumanModelRef.LFOOT.');
+            -obj.CoMHAND(1, :).' + (obj.casadiHumanModelRef.CoMHAND(1, :).' - obj.refDeviationCoMx * obj.casadiHumanModelRef.LHAND.');
+             obj.CoMHAND(1, :).' - (obj.casadiHumanModelRef.CoMHAND(1, :).' + obj.refDeviationCoMx * obj.casadiHumanModelRef.LHAND.');
+            -obj.CoMHEAD(1, :).' + (obj.casadiHumanModelRef.CoMHEAD(1, :).' - obj.refDeviationCoMx * obj.casadiHumanModelRef.LHEAD.');
+             obj.CoMHEAD(1, :).' - (obj.casadiHumanModelRef.CoMHEAD(1, :).' + obj.refDeviationCoMx * obj.casadiHumanModelRef.LHEAD.');
+            -obj.CoM(2, :).' + (obj.casadiHumanModelRef.CoM(2, :).' - obj.refDeviationCoMy * obj.casadiHumanModelRef.L.');
+             obj.CoM(2, :).' - (obj.casadiHumanModelRef.CoM(2, :).' + obj.refDeviationCoMy * obj.casadiHumanModelRef.L.');
+            -obj.CoMFOOT(2, :).' + (obj.casadiHumanModelRef.CoMFOOT(2, :).' - obj.refDeviationCoMy * obj.casadiHumanModelRef.LFOOT.');
+             obj.CoMFOOT(2, :).' - (obj.casadiHumanModelRef.CoMFOOT(2, :).' + obj.refDeviationCoMy * obj.casadiHumanModelRef.LFOOT.');
+            -obj.CoMHAND(2, :).' + (obj.casadiHumanModelRef.CoMHAND(2, :).' - obj.refDeviationCoMy * obj.casadiHumanModelRef.LHAND.');
+             obj.CoMHAND(2, :).' - (obj.casadiHumanModelRef.CoMHAND(2, :).' + obj.refDeviationCoMy * obj.casadiHumanModelRef.LHAND.');
+            -obj.CoMHEAD(2, :).' + (obj.casadiHumanModelRef.CoMHEAD(2, :).' - obj.refDeviationCoMy * obj.casadiHumanModelRef.LHEAD.');
+             obj.CoMHEAD(2, :).' - (obj.casadiHumanModelRef.CoMHEAD(2, :).' + obj.refDeviationCoMy * obj.casadiHumanModelRef.LHEAD.');
             ];
 %             obj.centerOfMassLimitConstraints = [...
 %              obj.CoM(:) - obj.casadiHumanModelRef.CoM(:);
