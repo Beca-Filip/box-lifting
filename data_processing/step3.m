@@ -24,7 +24,7 @@ markers_r_markers_fp = [0.2; 0; 0.3];
 
 
 % Kinematic identification data filepath
-kinematically_calibrated_filepath = "../processed_data/Calibration/kinematically_calibrated.mat";
+kinematically_calibrated_filepath = "../processed_data/Calibration/dynamically_and_kinematically_calibrated.mat";
 Calibration = importdata(kinematically_calibrated_filepath, "Calibration");
 
 % Lifting data filepath
