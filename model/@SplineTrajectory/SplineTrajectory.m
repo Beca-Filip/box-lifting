@@ -91,6 +91,7 @@ classdef SplineTrajectory
                 
         % Boundary conditions
         boundaryConditions = getDefaultBoundaryConditions(dimension, degree, knotNumber);
+        boundaryConditions = fifthOrderBoundaryConditions(numKnots, dq1, ddq1, dqend, ddqend);
         
         % Equidistant spline knots
         [knotTimes, knotValues] = getEquidistantSplineKnots(q, t, numKnots);
