@@ -17,8 +17,8 @@ BoxMass = obj.BoxMass;
 mm = [zeros(2, nbSamples); repmat(-r(1)*BoxMass*Gravity, [1, nbSamples])];
 
 % Forces change depending on the orientation\
-ff = [sin(sum(q, 1)) .* BoxMass .* Gravity; 
-     -cos(sum(q, 1)) .* BoxMass .* Gravity;
+ff = [sin(-sum(q, 1)) .* BoxMass .* Gravity; 
+     -cos(-sum(q, 1)) .* BoxMass .* Gravity;
      zeros(1, nbSamples);];
  
 % Concatenate and return
