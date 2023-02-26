@@ -80,6 +80,7 @@ classdef SplineTrajectory
         obj = computeValuesAndStore(obj, computationTimes, derivativeOrder);
         % Casadi setters
         [obj, opti] = casadiInstantiateOptiParameters(obj, numericSplineTrajectory, opti);
+        [obj, opti] = casadiInstantiateOptiParametersVarConditions(obj, numericSplineTrajectory, opti);
     end
     
     methods (Static, Access = public)
@@ -88,6 +89,7 @@ classdef SplineTrajectory
        
         % Initializers
         [obj, opti] = defaultCasadiOptiInitialize(opti, dimension, degree, knotNumber, evaluationNumber);
+        [obj, opti] = defaultCasadiOptiInitializeVarConditions(opti, dimension, degree, knotNumber, evaluationNumber);
                 
         % Boundary conditions
         boundaryConditions = getDefaultBoundaryConditions(dimension, degree, knotNumber);
@@ -105,6 +107,7 @@ classdef SplineTrajectory
     methods (Static, Access = private)
        % Default boundary conditions
        [boundaryConditions, opti] = getDefaultCasadiOptiBoundaryConditions(opti, dimension, degree, knotNumber);
+       [boundaryConditions, opti] = getDefaultCasadiOptiBoundaryConditionsVarConditions(opti, dimension, degree, knotNumber);
     end
 end
 
