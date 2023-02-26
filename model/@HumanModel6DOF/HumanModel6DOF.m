@@ -184,6 +184,7 @@ classdef HumanModel6DOF
         
         % Casadi setters
         [obj, opti] = casadiInstantiateOptiParameters(obj, numericLiftingEnvironment, opti);
+        numericalHumanModel = numericalInstantiationFromCasadi(obj, solutionObj);
         
         % Property modifiers
         obj = addKinematicPointOfIntrerest(obj, poi);
