@@ -2,11 +2,18 @@ classdef BoxLiftingDOC
     %BOXLIFTINGDOC creates an optimization model for box lifting with a
     %HumanModel6DOF.
         
+    properties (Constant, GetAccess = private)
+        mode1 = "constant_final_velocities"
+        mode2 = "variable_final_velocities"
+    end
+    
     properties
         % Optimization object
         opti(1, 1)      casadi.Opti
         
         % Hyperparameters
+        % Mode (with or without variable final constraints
+        mode = "constant_final_velocities"
         % Dimension of spline
         splineDimension(1, 1) double = 6
         % Degree of spline
@@ -119,6 +126,12 @@ classdef BoxLiftingDOC
             if nargin > 2
                 obj.splineEvaluationNumber = varargin{3};
             end
+            if nargin > 3
+                if ~strcmp(varargin{4},obj.mode1) && ~strcmp(varargin{4}, obj.mode2)
+                    error("undefined mode");
+                end
+                obj.mode = varargin{4};
+            end
             
             %% Create default opti object
             % Create the opti object
@@ -133,9 +146,13 @@ classdef BoxLiftingDOC
             obj.casadiLiftingEnvironment = LiftingEnvironment("casadi", obj.opti);
             
             % Create default spline trajectory object
-            [obj.casadiSplineTrajectory, obj.opti] = ...
-            SplineTrajectory.defaultCasadiOptiInitialize(obj.opti, obj.splineDimension, obj.splineDegree, obj.splineKnotNumber, obj.splineEvaluationNumber);
-            
+            if strcmp(obj.mode, obj.mode1)
+                [obj.casadiSplineTrajectory, obj.opti] = ...
+                SplineTrajectory.defaultCasadiOptiInitialize(obj.opti, obj.splineDimension, obj.splineDegree, obj.splineKnotNumber, obj.splineEvaluationNumber);
+            elseif strcmp(obj.mode, obj.mode2)
+                [obj.casadiSplineTrajectory, obj.opti] = ...
+                SplineTrajectory.defaultCasadiOptiInitializeVarConditions(obj.opti, obj.splineDimension, obj.splineDegree, obj.splineKnotNumber, obj.splineEvaluationNumber);
+            end
             %% Extract important quantities
             % Get joint trajectories
             obj.q = obj.casadiSplineTrajectory.currentEvaluatedValuesAndDerivatives{1};
@@ -234,7 +251,11 @@ classdef BoxLiftingDOC
             
             % Instantiate variables and parameters through the spline trajectory class
             % interface
-            [obj.casadiSplineTrajectory, obj.opti] = obj.casadiSplineTrajectory.casadiInstantiateOptiParameters(numericSplineTrajectory, obj.opti);
+            if strcmp(obj.mode, obj.mode1)
+                [obj.casadiSplineTrajectory, obj.opti] = obj.casadiSplineTrajectory.casadiInstantiateOptiParameters(numericSplineTrajectory, obj.opti);
+            elseif strcmp(obj.mode, obj.mode2)
+                [obj.casadiSplineTrajectory, obj.opti] = obj.casadiSplineTrajectory.casadiInstantiateOptiParametersVarConditions(numericSplineTrajectory, obj.opti);
+            end
         end
     end
 end
