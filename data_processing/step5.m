@@ -22,7 +22,6 @@ fp_R_base = base_R_fp.';
 % markers frame ( Center of Forceplate )
 markers_r_markers_fp = [0.2; 0; 0.3];
 
-
 % Kinematic identification data filepath
 kinematically_calibrated_lifting_filepath = "../processed_data/Lifting/kinematically_calibrated_lifting.mat";
 Lifting = importdata(kinematically_calibrated_lifting_filepath, "Lifting");
@@ -90,6 +89,14 @@ for numSubj = 2 : NO_SUBJECTS
         t_dropoff_3 = Lifting.(subj).Segmentation.(set).Rep3(segmentation_dropoff_index);
         t_dropoff_4 = Lifting.(subj).Segmentation.(set).Rep4(segmentation_dropoff_index);
         t_dropoff_5 = Lifting.(subj).Segmentation.(set).Rep5(segmentation_dropoff_index);
+        
+        % Define filtering parameters for raw data
+        filt_fs = Lifting.(subj).SamplingFrequency;
+        filt_cutoff = 2;
+        filt_order = 5;
+        
+        % Filter the forceplate data
+        Lifting.(subj).Forceplate = ForceplateFilter(Lifting.(subj).Forceplate, filt_fs, filt_cutoff, filt_order);
 
         % Extract the forceplate ground reaction forces
         Forceplate1 = ForceplateIndex(Lifting.(subj).Forceplate, t_liftoff_1:t_dropoff_1);
@@ -147,6 +154,13 @@ for numSubj = 2 : NO_SUBJECTS
         q4 = Lifting.(subj).(set).kinematicIdentification.q(:, t_liftoff_4:t_dropoff_4);
         q5 = Lifting.(subj).(set).kinematicIdentification.q(:, t_liftoff_5:t_dropoff_5);
         
+        % Filter the joint angles
+        q1 = lowpass_filter(q1, filt_fs, filt_cutoff, filt_order);
+        q2 = lowpass_filter(q2, filt_fs, filt_cutoff, filt_order);
+        q3 = lowpass_filter(q3, filt_fs, filt_cutoff, filt_order);
+        q4 = lowpass_filter(q4, filt_fs, filt_cutoff, filt_order);
+        q5 = lowpass_filter(q5, filt_fs, filt_cutoff, filt_order);
+        
         % Get the velocities and accelerations
         dq1 = gradient(q1) ./ Lifting.(subj).SamplingTime;
         dq2 = gradient(q2) ./ Lifting.(subj).SamplingTime;
@@ -196,7 +210,42 @@ for numSubj = 2 : NO_SUBJECTS
         TransportedMarkers3 = MarkersIndex(Lifting.(subj).(set).kinematicIdentification.TransportedMarkers, t_liftoff_3:t_dropoff_3);
         TransportedMarkers4 = MarkersIndex(Lifting.(subj).(set).kinematicIdentification.TransportedMarkers, t_liftoff_4:t_dropoff_4);
         TransportedMarkers5 = MarkersIndex(Lifting.(subj).(set).kinematicIdentification.TransportedMarkers, t_liftoff_5:t_dropoff_5);
-
+        
+        % Extract the box angle
+        BoxAngle1 = rad2deg(MarkersBoxPlanarAngle(TransportedMarkers1));
+        BoxAngle2 = rad2deg(MarkersBoxPlanarAngle(TransportedMarkers2));
+        BoxAngle3 = rad2deg(MarkersBoxPlanarAngle(TransportedMarkers3));
+        BoxAngle4 = rad2deg(MarkersBoxPlanarAngle(TransportedMarkers4));
+        BoxAngle5 = rad2deg(MarkersBoxPlanarAngle(TransportedMarkers5));
+        
+        % Draw the box angle informations
+        fig_box_angles_rep1 = figure;
+        plot(time_vec_1, BoxAngle1);
+        title(sprintf("%s : %s : Rep1", subj, set));
+        ylabel("box horizontal angle [deg]");
+        xlabel("time [s]");
+        fig_box_angles_rep2 = figure;
+        plot(time_vec_2, BoxAngle2);
+        title(sprintf("%s : %s : Rep2", subj, set));
+        ylabel("box horizontal angle [deg]");
+        xlabel("time [s]");
+        fig_box_angles_rep3 = figure;
+        plot(time_vec_3, BoxAngle3);
+        title(sprintf("%s : %s : Rep3", subj, set));
+        ylabel("box horizontal angle [deg]");
+        xlabel("time [s]");
+        fig_box_angles_rep4 = figure;
+        plot(time_vec_4, BoxAngle4);
+        title(sprintf("%s : %s : Rep4", subj, set));
+        ylabel("box horizontal angle [deg]");
+        xlabel("time [s]");
+        fig_box_angles_rep5 = figure;
+        plot(time_vec_5, BoxAngle5);
+        title(sprintf("%s : %s : Rep5", subj, set));
+        ylabel("box horizontal angle [deg]");
+        xlabel("time [s]");
+        
+        
         % Vector from wrist to the box grip point
         WristToBoxGripPointVector1 = MarkersWristToBoxGripPoint(TransportedMarkers1);
         WristToBoxGripPointVector2 = MarkersWristToBoxGripPoint(TransportedMarkers2);
@@ -210,11 +259,11 @@ for numSubj = 2 : NO_SUBJECTS
         normWristToBoxGripPointVector4 = sqrt(sum(WristToBoxGripPointVector4(:, 1:2).^2, 2));
         normWristToBoxGripPointVector5 = sqrt(sum(WristToBoxGripPointVector5(:, 1:2).^2, 2));
         % Get angle
-        angleWristToBoxGripPointVector1 = atan2(WristToBoxGripPointVector1(:, 2), WristToBoxGripPointVector1(:, 1));
-        angleWristToBoxGripPointVector2 = atan2(WristToBoxGripPointVector2(:, 2), WristToBoxGripPointVector2(:, 1));
-        angleWristToBoxGripPointVector3 = atan2(WristToBoxGripPointVector3(:, 2), WristToBoxGripPointVector3(:, 1));
-        angleWristToBoxGripPointVector4 = atan2(WristToBoxGripPointVector4(:, 2), WristToBoxGripPointVector4(:, 1));
-        angleWristToBoxGripPointVector5 = atan2(WristToBoxGripPointVector5(:, 2), WristToBoxGripPointVector5(:, 1));
+        angleWristToBoxGripPointVector1 = rad2deg(atan2(WristToBoxGripPointVector1(:, 2), WristToBoxGripPointVector1(:, 1)));
+        angleWristToBoxGripPointVector2 = rad2deg(atan2(WristToBoxGripPointVector2(:, 2), WristToBoxGripPointVector2(:, 1)));
+        angleWristToBoxGripPointVector3 = rad2deg(atan2(WristToBoxGripPointVector3(:, 2), WristToBoxGripPointVector3(:, 1)));
+        angleWristToBoxGripPointVector4 = rad2deg(atan2(WristToBoxGripPointVector4(:, 2), WristToBoxGripPointVector4(:, 1)));
+        angleWristToBoxGripPointVector5 = rad2deg(atan2(WristToBoxGripPointVector5(:, 2), WristToBoxGripPointVector5(:, 1)));
         % Determine wrist angle
         angleDegWrist1 = rad2deg(atan2(WristToBoxGripPointVector1(:, 2), WristToBoxGripPointVector1(:, 1)) - sum(q1).');
         angleDegWrist2 = rad2deg(atan2(WristToBoxGripPointVector2(:, 2), WristToBoxGripPointVector2(:, 1)) - sum(q2).');
@@ -352,7 +401,7 @@ for numSubj = 2 : NO_SUBJECTS
         % Set the spline degree
         splineDegree = 5;
         % Set the number of knots of the spline
-        numSplineKnots = 15;
+        numSplineKnots = 10;
         % Get the spline knot parameters
         [knotTimes1, knotValues1] = SplineTrajectory.getEquidistantSplineKnots(q1, time_vec_1, numSplineKnots);
         [knotTimes2, knotValues2] = SplineTrajectory.getEquidistantSplineKnots(q2, time_vec_2, numSplineKnots);
@@ -360,12 +409,19 @@ for numSubj = 2 : NO_SUBJECTS
         [knotTimes4, knotValues4] = SplineTrajectory.getEquidistantSplineKnots(q4, time_vec_4, numSplineKnots);
         [knotTimes5, knotValues5] = SplineTrajectory.getEquidistantSplineKnots(q5, time_vec_5, numSplineKnots);
         
+        % Set boundary conditions
+        splineBoundaryConditions1 = SplineTrajectory.fifthOrderBoundaryConditions(numSplineKnots, dq1(:, 1), ddq1(:, 1), dq1(:, end), ddq1(:, end));
+        splineBoundaryConditions2 = SplineTrajectory.fifthOrderBoundaryConditions(numSplineKnots, dq2(:, 1), ddq2(:, 1), dq2(:, end), ddq2(:, end));
+        splineBoundaryConditions3 = SplineTrajectory.fifthOrderBoundaryConditions(numSplineKnots, dq3(:, 1), ddq3(:, 1), dq3(:, end), ddq3(:, end));
+        splineBoundaryConditions4 = SplineTrajectory.fifthOrderBoundaryConditions(numSplineKnots, dq4(:, 1), ddq4(:, 1), dq4(:, end), ddq4(:, end));
+        splineBoundaryConditions5 = SplineTrajectory.fifthOrderBoundaryConditions(numSplineKnots, dq5(:, 1), ddq5(:, 1), dq5(:, end), ddq5(:, end));
+       
         % Create spline trajectories
-        splineTrajectory1 = SplineTrajectory(knotTimes1, knotValues1, splineDegree);
-        splineTrajectory2 = SplineTrajectory(knotTimes2, knotValues2, splineDegree);
-        splineTrajectory3 = SplineTrajectory(knotTimes3, knotValues3, splineDegree);
-        splineTrajectory4 = SplineTrajectory(knotTimes4, knotValues4, splineDegree);
-        splineTrajectory5 = SplineTrajectory(knotTimes5, knotValues5, splineDegree);
+        splineTrajectory1 = SplineTrajectory(knotTimes1, knotValues1, splineDegree, splineBoundaryConditions1);
+        splineTrajectory2 = SplineTrajectory(knotTimes2, knotValues2, splineDegree, splineBoundaryConditions2);
+        splineTrajectory3 = SplineTrajectory(knotTimes3, knotValues3, splineDegree, splineBoundaryConditions3);
+        splineTrajectory4 = SplineTrajectory(knotTimes4, knotValues4, splineDegree, splineBoundaryConditions4);
+        splineTrajectory5 = SplineTrajectory(knotTimes5, knotValues5, splineDegree, splineBoundaryConditions5);
         
         % Evaluate spline at the time vectors
         splineTrajectory1 = splineTrajectory1.computeValuesAndStore(time_vec_1, splineDegree-1);
@@ -400,29 +456,29 @@ for numSubj = 2 : NO_SUBJECTS
         fFOOT4 = zeros(6, nbSamples4);
         fFOOT5 = zeros(6, nbSamples5);
         
-%         fHAND1 = liftingEnvironment1.getExternalWrenches(q1, humanModel.Gravity);
-%         fHAND2 = liftingEnvironment2.getExternalWrenches(q2, humanModel.Gravity);
-%         fHAND3 = liftingEnvironment3.getExternalWrenches(q3, humanModel.Gravity);
-%         fHAND4 = liftingEnvironment4.getExternalWrenches(q4, humanModel.Gravity);
-%         fHAND5 = liftingEnvironment5.getExternalWrenches(q5, humanModel.Gravity);
+        fHAND1 = liftingEnvironment1.getExternalWrenches(q1, humanModel.Gravity);
+        fHAND2 = liftingEnvironment2.getExternalWrenches(q2, humanModel.Gravity);
+        fHAND3 = liftingEnvironment3.getExternalWrenches(q3, humanModel.Gravity);
+        fHAND4 = liftingEnvironment4.getExternalWrenches(q4, humanModel.Gravity);
+        fHAND5 = liftingEnvironment5.getExternalWrenches(q5, humanModel.Gravity);
         
-        fHAND1 = liftingEnvironment1.getExternalWrenches([q1; angleWristToBoxGripPointVector1.'], humanModel.Gravity);
-        fHAND2 = liftingEnvironment2.getExternalWrenches([q2; angleWristToBoxGripPointVector2.'], humanModel.Gravity);
-        fHAND3 = liftingEnvironment3.getExternalWrenches([q3; angleWristToBoxGripPointVector3.'], humanModel.Gravity);
-        fHAND4 = liftingEnvironment4.getExternalWrenches([q4; angleWristToBoxGripPointVector4.'], humanModel.Gravity);
-        fHAND5 = liftingEnvironment5.getExternalWrenches([q5; angleWristToBoxGripPointVector5.'], humanModel.Gravity);
+%         fHAND1 = liftingEnvironment1.getExternalWrenches([q1; angleWristToBoxGripPointVector1.'], humanModel.Gravity);
+%         fHAND2 = liftingEnvironment2.getExternalWrenches([q2; angleWristToBoxGripPointVector2.'], humanModel.Gravity);
+%         fHAND3 = liftingEnvironment3.getExternalWrenches([q3; angleWristToBoxGripPointVector3.'], humanModel.Gravity);
+%         fHAND4 = liftingEnvironment4.getExternalWrenches([q4; angleWristToBoxGripPointVector4.'], humanModel.Gravity);
+%         fHAND5 = liftingEnvironment5.getExternalWrenches([q5; angleWristToBoxGripPointVector5.'], humanModel.Gravity);
+
+        fHAND1_interpolated = liftingEnvironment1.getExternalWrenches(q1_interpolated, humanModel.Gravity);
+        fHAND2_interpolated = liftingEnvironment2.getExternalWrenches(q2_interpolated, humanModel.Gravity);
+        fHAND3_interpolated = liftingEnvironment3.getExternalWrenches(q3_interpolated, humanModel.Gravity);
+        fHAND4_interpolated = liftingEnvironment4.getExternalWrenches(q4_interpolated, humanModel.Gravity);
+        fHAND5_interpolated = liftingEnvironment5.getExternalWrenches(q5_interpolated, humanModel.Gravity);
         
-%         fHAND1_interpolated = liftingEnvironment1.getExternalWrenches(q1_interpolated, humanModel.Gravity);
-%         fHAND2_interpolated = liftingEnvironment2.getExternalWrenches(q2_interpolated, humanModel.Gravity);
-%         fHAND3_interpolated = liftingEnvironment3.getExternalWrenches(q3_interpolated, humanModel.Gravity);
-%         fHAND4_interpolated = liftingEnvironment4.getExternalWrenches(q4_interpolated, humanModel.Gravity);
-%         fHAND5_interpolated = liftingEnvironment5.getExternalWrenches(q5_interpolated, humanModel.Gravity);
-        
-        fHAND1_interpolated = liftingEnvironment1.getExternalWrenches([q1_interpolated; angleWristToBoxGripPointVector1.'], humanModel.Gravity);
-        fHAND2_interpolated = liftingEnvironment2.getExternalWrenches([q2_interpolated; angleWristToBoxGripPointVector2.'], humanModel.Gravity);
-        fHAND3_interpolated = liftingEnvironment3.getExternalWrenches([q3_interpolated; angleWristToBoxGripPointVector3.'], humanModel.Gravity);
-        fHAND4_interpolated = liftingEnvironment4.getExternalWrenches([q4_interpolated; angleWristToBoxGripPointVector4.'], humanModel.Gravity);
-        fHAND5_interpolated = liftingEnvironment5.getExternalWrenches([q5_interpolated; angleWristToBoxGripPointVector5.'], humanModel.Gravity);
+%         fHAND1_interpolated = liftingEnvironment1.getExternalWrenches([q1_interpolated; angleWristToBoxGripPointVector1.'], humanModel.Gravity);
+%         fHAND2_interpolated = liftingEnvironment2.getExternalWrenches([q2_interpolated; angleWristToBoxGripPointVector2.'], humanModel.Gravity);
+%         fHAND3_interpolated = liftingEnvironment3.getExternalWrenches([q3_interpolated; angleWristToBoxGripPointVector3.'], humanModel.Gravity);
+%         fHAND4_interpolated = liftingEnvironment4.getExternalWrenches([q4_interpolated; angleWristToBoxGripPointVector4.'], humanModel.Gravity);
+%         fHAND5_interpolated = liftingEnvironment5.getExternalWrenches([q5_interpolated; angleWristToBoxGripPointVector5.'], humanModel.Gravity);
         
         % Get torques
         [tau1, base_grf_model1] = humanModel.inverseDynamicModel(q1, dq1, ddq1, fFOOT1, fHAND1);
@@ -430,13 +486,22 @@ for numSubj = 2 : NO_SUBJECTS
         [tau3, base_grf_model3] = humanModel.inverseDynamicModel(q3, dq3, ddq3, fFOOT3, fHAND3);
         [tau4, base_grf_model4] = humanModel.inverseDynamicModel(q4, dq4, ddq4, fFOOT4, fHAND4);
         [tau5, base_grf_model5] = humanModel.inverseDynamicModel(q5, dq5, ddq5, fFOOT5, fHAND5);
+%         [tau1, base_grf_model1] = humanModel.inverseDynamicModel(q1, dq1, ddq1, fFOOT1, fFOOT1);
+%         [tau2, base_grf_model2] = humanModel.inverseDynamicModel(q2, dq2, ddq2, fFOOT2, fFOOT2);
+%         [tau3, base_grf_model3] = humanModel.inverseDynamicModel(q3, dq3, ddq3, fFOOT3, fFOOT3);
+%         [tau4, base_grf_model4] = humanModel.inverseDynamicModel(q4, dq4, ddq4, fFOOT4, fFOOT4);
+%         [tau5, base_grf_model5] = humanModel.inverseDynamicModel(q5, dq5, ddq5, fFOOT5, fFOOT5);
         
         [tau1_interpolated, base_grf_model1_interpolated] = humanModel.inverseDynamicModel(q1_interpolated, dq1_interpolated, ddq1_interpolated, fFOOT1, fHAND1_interpolated);
         [tau2_interpolated, base_grf_model2_interpolated] = humanModel.inverseDynamicModel(q2_interpolated, dq2_interpolated, ddq2_interpolated, fFOOT2, fHAND2_interpolated);
         [tau3_interpolated, base_grf_model3_interpolated] = humanModel.inverseDynamicModel(q3_interpolated, dq3_interpolated, ddq3_interpolated, fFOOT3, fHAND3_interpolated);
         [tau4_interpolated, base_grf_model4_interpolated] = humanModel.inverseDynamicModel(q4_interpolated, dq4_interpolated, ddq4_interpolated, fFOOT4, fHAND4_interpolated);
         [tau5_interpolated, base_grf_model5_interpolated] = humanModel.inverseDynamicModel(q5_interpolated, dq5_interpolated, ddq5_interpolated, fFOOT5, fHAND5_interpolated);
-        
+%         [tau1_interpolated, base_grf_model1_interpolated] = humanModel.inverseDynamicModel(q1_interpolated, dq1_interpolated, ddq1_interpolated, fFOOT1, fFOOT1);
+%         [tau2_interpolated, base_grf_model2_interpolated] = humanModel.inverseDynamicModel(q2_interpolated, dq2_interpolated, ddq2_interpolated, fFOOT2, fFOOT2);
+%         [tau3_interpolated, base_grf_model3_interpolated] = humanModel.inverseDynamicModel(q3_interpolated, dq3_interpolated, ddq3_interpolated, fFOOT3, fFOOT3);
+%         [tau4_interpolated, base_grf_model4_interpolated] = humanModel.inverseDynamicModel(q4_interpolated, dq4_interpolated, ddq4_interpolated, fFOOT4, fFOOT4);
+%         [tau5_interpolated, base_grf_model5_interpolated] = humanModel.inverseDynamicModel(q5_interpolated, dq5_interpolated, ddq5_interpolated, fFOOT5, fFOOT5);
         % Transform GRFs to marker frame
         % Extract transformation parameters
         markers_R_base = Lifting.(subj).(set).kinematicIdentification.markers_R_base;
@@ -707,8 +772,21 @@ for numSubj = 2 : NO_SUBJECTS
         plot_vector_quantities_opts_shape(time_vec_5, [markers_grf_fp5(1:2, :); markers_grf_fp5(6, :)], [], plotopts, [3, 1], 'Color', CMAP(1, :), 'DisplayName', 'Forceplate');
         plot_vector_quantities_opts_shape(time_vec_5, [markers_grf_model5(1:2, :); markers_grf_model5(6, :)], [], plotopts, [3, 1], 'Color', CMAP(2, :), 'DisplayName', 'Numerical');
         plot_vector_quantities_opts_shape(time_vec_5, [markers_grf_model5_interpolated(1:2, :); markers_grf_model5_interpolated(6, :)], [], plotopts, [3, 1], 'Color', CMAP(3, :), 'DisplayName', 'Interpolated');
+        
         legend('interpreter', 'latex', 'location', 'best');
         
+        % Save box angle figures
+        fig_box_angles_rep1_savepath = sprintf("%s/box_angles_rep1.jpg", set_output_folderpath);
+        saveas(fig_box_angles_rep1, fig_box_angles_rep1_savepath);
+        fig_box_angles_rep2_savepath = sprintf("%s/box_angles_rep2.jpg", set_output_folderpath);
+        saveas(fig_box_angles_rep2, fig_box_angles_rep2_savepath);
+        fig_box_angles_rep3_savepath = sprintf("%s/box_angles_rep3.jpg", set_output_folderpath);
+        saveas(fig_box_angles_rep3, fig_box_angles_rep3_savepath);
+        fig_box_angles_rep4_savepath = sprintf("%s/box_angles_rep4.jpg", set_output_folderpath);
+        saveas(fig_box_angles_rep4, fig_box_angles_rep4_savepath);
+        fig_box_angles_rep5_savepath = sprintf("%s/box_angles_rep5.jpg", set_output_folderpath);
+        saveas(fig_box_angles_rep5, fig_box_angles_rep5_savepath);
+
         % Save figures
         fig_angles_allreps_savepath = sprintf("%s/angles_all_reps.jpg", set_output_folderpath);
         saveas(fig_angles_allreps, fig_angles_allreps_savepath);
