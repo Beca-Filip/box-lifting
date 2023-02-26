@@ -15,7 +15,7 @@ function [obj, opti] = casadiInstantiateOptiParametersVarConditions(obj, numeric
     % Set values for all boundary conditions
     for bndCnd = 1 : length(obj.boundaryConditions)
         % If boundary condition is at the first knot, treat as parameter
-        if obj.boundaryConditions.KnotOfCondition == 1
+        if obj.boundaryConditions(bndCnd, 1).KnotOfCondition == 1
             opti.set_value(obj.boundaryConditions(bndCnd, 1).Value, numericSplineTrajectory.boundaryConditions(bndCnd, 1).Value);
         % Otherwise treat as variable
         else

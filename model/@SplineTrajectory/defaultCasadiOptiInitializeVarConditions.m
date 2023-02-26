@@ -17,7 +17,7 @@ knotValues = opti.variable(dimension, knotNumber);
 knotTimes = opti.parameter(1, knotNumber);
 
 % Get the default boundary conditions
-[boundaryConditions, opti] = SplineTrajectory.getDefaultCasadiOptiBoundaryConditions(opti, dimension, degree, knotNumber);
+[boundaryConditions, opti] = SplineTrajectory.getDefaultCasadiOptiBoundaryConditionsVarConditions(opti, dimension, degree, knotNumber);
 
 % Create and return the spline object
 obj = SplineTrajectory(knotTimes, knotValues, degree, boundaryConditions);
