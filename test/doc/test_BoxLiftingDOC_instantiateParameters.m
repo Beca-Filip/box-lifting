@@ -5,19 +5,32 @@ clc;
 Trials = importdata("../../processed_data/Lifting/kinematically_calibrated_lifting_with_environment.mat", "Trials");
 
 splineDegree = 5;
-splineNumKnots = 15;
+splineNumKnots = 10;
 splineEvaluationNumber = 100;
 
 doc = BoxLiftingDOC(splineDegree, splineNumKnots, splineEvaluationNumber);
+% Constraints
 doc = doc.addInitialJointConstraints();
 doc = doc.addFinalCartesianConstraints();
 doc = doc.addJointLimitConstraints();
 doc = doc.addTorqueLimitConstraints();
 doc = doc.addCopLimitConstraints();
+doc = doc.addCollisionConstraints();
+% Costs
 doc = doc.addSumSquaredJointVelocitiesCost();
+doc = doc.addSumSquaredJointAccelerationsCost();
+doc = doc.addSumSquaredJointJerksCost();
 doc = doc.addSumSquaredWristVelocityCost();
+doc = doc.addSumSquaredWristAccelerationCost();
+doc = doc.addSumSquaredJointTorquesCost();
+doc = doc.addSumSquaredJointPowersCost();
+% Create parameterized cost function
 doc = doc.setParametrizedCostFunction();
-doc = doc.setCostFunctionParameters(ones(2, 1));
+% Set parameters
+% doc = doc.setCostFunctionParameters(ones(7, 1));
+omega0 = zeros(7, 1);
+omega0(7) = 1;
+doc = doc.setCostFunctionParameters(omega0);
 
 sol_opt = struct;
 % sol_opt.ipopt.print_level = 0;
@@ -36,12 +49,17 @@ doc.opti.solver('ipopt', sol_opt);
 sol_doc = doc.opti.solve();
 
 %%
-figure;
 q = sol_doc.value(doc.q);
 L = sol_doc.value(doc.casadiHumanModel.L);
 Ts = sol_doc.value(doc.casadiSplineTrajectory.duration ./ numel(doc.casadiSplineTrajectory.currentEvaluatedTimes));
 
-Animate_nDOF(q, L, round(Ts*3, 2));
+% Get spheres for animation
+numHumMod = doc.casadiHumanModel.numericalInstantiationFromCasadi(sol_doc);
+spheres = numHumMod.getSpheresStructureForAnimation();
+
+% Animate_nDOF(q, L, round(Ts*3, 2));
+figure;
+Animate_nDOF_Spheres(q, L, spheres, round(3*Ts, 2));
 
 %% 
 time_vec = sol_doc.value(doc.casadiSplineTrajectory.currentEvaluatedTimes);
