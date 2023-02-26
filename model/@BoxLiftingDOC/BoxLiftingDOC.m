@@ -45,11 +45,15 @@ classdef BoxLiftingDOC
         % Cost function 2:
         sumSquaredJointAccelerations(:, 1)
         % Cost function 3:
-        sumSquaredWristVelocity(:, 1)
+        sumSquaredJointJerks(:, 1)
         % Cost function 4:
-        sumSquaredWristAcceleration(:, 1)
+        sumSquaredWristVelocity(:, 1)
         % Cost function 5:
+        sumSquaredWristAcceleration(:, 1)
+        % Cost function 6:
         sumSquaredJointTorques(:, 1)
+        % Cost function 7:
+        sumSquaredJointPowers(:, 1)
         
         % Optimization compound cost function
         % Cost function:
@@ -195,11 +199,15 @@ classdef BoxLiftingDOC
             % Cost function 2:
             obj.sumSquaredJointAccelerations = [];
             % Cost function 3:
-            obj.sumSquaredWristVelocity = [];
+            obj.sumSquaredJointJerks = [];
             % Cost function 4:
-            obj.sumSquaredWristAcceleration = [];
+            obj.sumSquaredWristVelocity = [];
             % Cost function 5:
+            obj.sumSquaredWristAcceleration = [];
+            % Cost function 6:
             obj.sumSquaredJointTorques = [];
+            % Cost function 7:
+            obj.sumSquaredJointPowers = [];
 
             % Optimization compound cost function
             % Cost function:
@@ -234,9 +242,11 @@ classdef BoxLiftingDOC
         % Cost function adders        
         obj = addSumSquaredJointVelocitiesCost(obj);
         obj = addSumSquaredJointAccelerationsCost(obj);
+        obj = addSumSquaredJointJerksCost(obj);
         obj = addSumSquaredWristVelocityCost(obj);
         obj = addSumSquaredWristAccelerationCost(obj);
         obj = addSumSquaredJointTorquesCost(obj);
+        obj = addSumSquaredJointPowersCost(obj);
         
         % Cost function setter
         obj = setParametrizedCostFunction(obj);
