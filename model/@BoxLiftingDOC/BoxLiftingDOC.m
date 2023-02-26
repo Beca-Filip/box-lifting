@@ -110,8 +110,13 @@ classdef BoxLiftingDOC
         p_wri(2, :)
         % Quantity 13: Wrist cartesian velocities
         v_wri(2, :)
-        % Quantity 12: Wrist cartesian accelerations
+        % Quantity 14: Wrist cartesian accelerations
         a_wri(2, :)
+        % Quantity 15: Distances from body to box
+        distBodyToBox(:, :)
+        % Quantity 16: Distances from box to table
+        distBoxToTable(:, :)
+        
     end
     
     methods
@@ -157,6 +162,15 @@ classdef BoxLiftingDOC
                 [obj.casadiSplineTrajectory, obj.opti] = ...
                 SplineTrajectory.defaultCasadiOptiInitializeVarConditions(obj.opti, obj.splineDimension, obj.splineDegree, obj.splineKnotNumber, obj.splineEvaluationNumber);
             end
+            
+            % Create box collision sphere
+            boxCollisionSphere = obj.casadiLiftingEnvironment.createBoxCollisionSphere();
+            % Create table collision spheres
+            tableCollisionSpheres = obj.casadiLiftingEnvironment.createTableCollisionSphere();
+            
+            % Add collision spheres to the model
+            obj.casadiHumanModel = obj.casadiHumanModel.addCollisionSphere(boxCollisionSphere);
+            obj.casadiHumanModel = obj.casadiHumanModel.addCollisionSphere(tableCollisionSpheres);
             %% Extract important quantities
             % Get joint trajectories
             obj.q = obj.casadiSplineTrajectory.currentEvaluatedValuesAndDerivatives{1};
@@ -186,8 +200,17 @@ classdef BoxLiftingDOC
             obj.v_wri = obj.v_fkm{contains([obj.casadiHumanModel.KPOI.Name], "Hands")}(1:2, :);
             obj.a_wri = obj.a_fkm{contains([obj.casadiHumanModel.KPOI.Name], "Hands")}(1:2, :);
             
-            % Extract sphere distances
-            obj.casadiHumanModel
+            % Get collision sphere distances
+            D = obj.casadiHumanModel.collisionSpheresDistances(obj.q);            
+            % Get body, box and table sphere indices
+            bodySphereIndices = find(contains([obj.casadiHumanModel.CS.Name] ,"Link", "IgnoreCase", true) & ~contains([obj.casadiHumanModel.CS.Name] ,"Forearm", "IgnoreCase", true));
+            boxSphereIndex = find(contains([obj.casadiHumanModel.CS.Name] ,"Box", "IgnoreCase", true));
+            tableSphereIndices = find(contains([obj.casadiHumanModel.CS.Name] ,"Table", "IgnoreCase", true));
+            % Determine distance from body spheres to box
+            obj.distBodyToBox = vertcat(D{bodySphereIndices, boxSphereIndex});
+            % Determine distance from box to table
+            obj.distBoxToTable = vertcat(D{boxSphereIndex, tableSphereIndices});
+            
             %% Initialize empty problem cost
             % Cost function parameters
             obj.omega = [];

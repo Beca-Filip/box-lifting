@@ -1,8 +1,8 @@
 function obj = addCollisionConstraints(obj)
 
 % Constraint:
-obj.collisionConstraints = obj.q(:, end) - obj.casadiLiftingEnvironment.JointAnglesFinal;
+obj.collisionConstraints = vertcat(obj.distBodyToBox(:), obj.distBoxToTable(:));
 
 % Set opti object to be subject to
-obj.opti.subject_to(obj.finalJointConstraints == 0);
+obj.opti.subject_to(obj.collisionConstraints >= 0);
 end
