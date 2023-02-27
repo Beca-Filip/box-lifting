@@ -55,8 +55,11 @@ RMSE = zeros(6, size(omega_arr, 1));
 q_arr = zeros([size(Trials(TrialIndex).splineTrajectory.currentEvaluatedValuesAndDerivatives{1}), size(omega_arr, 1)]);
 
 tic
+fprintf("Iteration %05d/%05d.", 0, size(omega_arr, 1));
 % For every parameter
 for ii = 1 : size(omega_arr, 1)
+    
+    fprintf("\b\b\b\b\b\b\b\b\b\b\b\b%05d/%05d.", ii, size(omega_arr, 1));
    
     % Extract the cost function parameters
     omega = omega_arr(ii, :).';
@@ -72,6 +75,7 @@ for ii = 1 : size(omega_arr, 1)
     % Caclulate RMSE
     RMSE(:, ii) = row_rmse(Trials(TrialIndex).splineTrajectory.currentEvaluatedValuesAndDerivatives{1}, q_arr(:, :, ii));
 end
+fprintf("\n");
 toc
 save("test_BoxLiftingDOC_gridSearch.mat", "boxliftingdoc", "q", "RMSE", "omega_arr");
 
