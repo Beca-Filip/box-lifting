@@ -77,5 +77,6 @@ for ii = 1 : size(omega_arr, 1)
 end
 fprintf("\n");
 toc
-save("test_BoxLiftingDOC_gridSearch.mat", "boxliftingdoc", "q", "RMSE", "omega_arr");
+%%
+save("test_BoxLiftingDOC_gridSearch.mat", "doc", "q_arr", "RMSE", "omega_arr");
 
