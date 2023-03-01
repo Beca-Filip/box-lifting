@@ -1,10 +1,37 @@
 classdef BoxLiftingDOC
     %BOXLIFTINGDOC creates an optimization model for box lifting with a
     %HumanModel6DOF.
+    %
+    % doc = BOXLIFTINGDOC() 
+    % doc = BOXLIFTINGDOC(splineDegree)
+    % doc = BOXLIFTINGDOC(splineDegree, splineKnotNumber)
+    % doc = BOXLIFTINGDOC(splineDegree, splineKnotNumber, splineEvaluationNumber)
+    % doc = BOXLIFTINGDOC(splineDegree, splineKnotNumber, splineEvaluationNumber, mode)
+    % doc = BOXLIFTINGDOC(splineDegree, splineKnotNumber, splineEvaluationNumber, mode, parameter_mode)
+    %
+    % Default values:
+    %   -Degree of spline
+    %   splineDegree(1, 1) double = 5
+    %   -Number of knots of spline
+    %   splineKnotNumber(1, 1) double = 10
+    %   -Number of evaluation points of spline
+    %   splineEvaluationNumber(1, 1) double = 50
+    %   -Mode (with or without variable final constraints)
+    %   mode = "constant_final_velocities"
+    %   -Parameter mode
+    %   parameter_mode = "constant_parameters";
+    %
+    %   Options:
+    %   mode1 = "constant_final_velocities"
+    %   mode2 = "variable_final_velocities"
+    %   parameter_mode1 = "constant_parameters"
+    %   parameter_mode2 = "time_changing_parameters"
         
     properties (Constant, GetAccess = private)
         mode1 = "constant_final_velocities"
         mode2 = "variable_final_velocities"
+        parameter_mode1 = "constant_parameters"
+        parameter_mode2 = "time_changing_parameters"
     end
     
     properties
@@ -12,8 +39,10 @@ classdef BoxLiftingDOC
         opti(1, 1)      casadi.Opti
         
         % Hyperparameters
-        % Mode (with or without variable final constraints
+        % Mode (with or without variable final constraints)
         mode = "constant_final_velocities"
+        % Parameter mode
+        parameter_mode = "constant_parameters";
         % Dimension of spline
         splineDimension(1, 1) double = 6
         % Degree of spline
@@ -36,6 +65,8 @@ classdef BoxLiftingDOC
         
         % Cost function parameters
         omega(:, 1)
+        % Time changing cost function parameters
+        omega_t(:, :)
         
         % Optimization cost function set
         % Cost function vector:
@@ -137,9 +168,15 @@ classdef BoxLiftingDOC
             end
             if nargin > 3
                 if ~strcmp(varargin{4},obj.mode1) && ~strcmp(varargin{4}, obj.mode2)
-                    error("undefined mode");
+                    error("Undefined mode.");
                 end
                 obj.mode = varargin{4};
+            end
+            if nargin > 4
+                if ~strcmp(varargin{5},obj.parameter_mode1) && ~strcmp(varargin{5}, obj.parameter_mode2)
+                    error("Undefined parameter mode.");
+                end
+                obj.parameter_mode = varargin{5};
             end
             
             %% Create default opti object
@@ -214,6 +251,8 @@ classdef BoxLiftingDOC
             %% Initialize empty problem cost
             % Cost function parameters
             obj.omega = [];
+            % Time changing cost function parameters
+            obj.omega_t = [];
             % Optimization cost function set
             % Cost function vector:
             obj.costFunctionVector = [];
@@ -262,7 +301,7 @@ classdef BoxLiftingDOC
         obj = addTorqueLimitConstraints(obj);
         obj = addCopLimitConstraints(obj);
         
-        % Cost function adders        
+        % Cost function adders
         obj = addSumSquaredJointVelocitiesCost(obj);
         obj = addSumSquaredJointAccelerationsCost(obj);
         obj = addSumSquaredJointJerksCost(obj);
