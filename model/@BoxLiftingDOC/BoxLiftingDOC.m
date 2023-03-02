@@ -313,6 +313,11 @@ classdef BoxLiftingDOC
         % Cost function setter
         obj = setParametrizedCostFunction(obj);
         
+        % Debugging (no return value)
+        debugDOC(obj);
+        % Debugging initial values (no return value)
+        debugInitialDOC(obj);
+        
         % Instantiator
         function obj = instantiateParameters(obj, numericHumanModel, numericLiftingEnvironment, numericSplineTrajectory)
             
