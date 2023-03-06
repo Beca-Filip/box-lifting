@@ -40,6 +40,8 @@ classdef BoxLiftingLocalIOC
         
         % Runs the IOC
         obj = runIOC(obj, varargin);
+        % Runs genetic algorithms on IOC
+        obj = runGlobalIOC(obj, varargin);
         
         % Vectorize the weights
         w = vectorizeWeightsForIOC(obj, w);
