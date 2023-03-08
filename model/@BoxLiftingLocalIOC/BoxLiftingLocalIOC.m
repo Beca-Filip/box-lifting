@@ -37,11 +37,14 @@ classdef BoxLiftingLocalIOC
         
         % Outer loop cost function
         J = costFun(obj, w);
+        J = costFun_noInit(obj, w);
         
         % Runs the IOC
         obj = runIOC(obj, varargin);
         % Runs genetic algorithms on IOC
         obj = runGlobalIOC(obj, varargin);
+        % Runs genetic algorithms on IOC
+        obj = runGridIOC(obj, varargin);
         
         % Vectorize the weights
         w = vectorizeWeightsForIOC(obj, w);
