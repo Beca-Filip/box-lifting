@@ -2,6 +2,8 @@ classdef BoxLiftingLocalIOC
     %LOCALIOC performs a local IOC search powered by fmincon.
     
     properties
+        % Some fixed weights the IOC won't search for
+        fixedWeights(:, 1)
         % Experiment trials structure
         Trials(:, 1)        struct
         % Handle object to store current guess for primal and dual doc solution
@@ -31,6 +33,8 @@ classdef BoxLiftingLocalIOC
                 % Initialize primal solution
                 obj.initGuessDOC.primal(:, TrialIndex) = obj.doc.opti.debug.value(obj.doc.opti.x, obj.doc.opti.initial());
             end
+            % Initialize fixed weights to empty
+            obj.fixedWeights = [];
             % Solution obj
             obj.solution = struct();
         end
@@ -38,6 +42,7 @@ classdef BoxLiftingLocalIOC
         % Outer loop cost function
         J = costFun(obj, w);
         J = costFun_noInit(obj, w);
+        J = costFunSomeFixedWeights(obj, w);
         
         % Runs the IOC
         obj = runIOC(obj, varargin);
@@ -45,7 +50,11 @@ classdef BoxLiftingLocalIOC
         obj = runGlobalIOC(obj, varargin);
         % Runs genetic algorithms on IOC
         obj = runGridIOC(obj, varargin);
+        % Runs the IOC with some fixed weights
+        obj = runIOCsomeFixedWeights(obj, varargin);
         
+        % Add the fixed weights to currently considered vector
+        w = addFixedWeights(obj, w);
         % Vectorize the weights
         w = vectorizeWeightsForIOC(obj, w);
         % Matricize the weights for IOC
