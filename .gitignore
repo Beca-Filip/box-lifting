@@ -4,3 +4,4 @@
 *.jpg
 *.png
 processed_data/Lifting/kinematically_calibrated_lifting.mat
+junk_scripts
