@@ -316,9 +316,9 @@ classdef BoxLiftingDOC
         obj = setCostFunctionParameters(obj, omega);
         
         % Debugging (no return value)
-        debugDOC(obj);
+        ErrorCounter = debugDOC(obj);
         % Debugging initial values (no return value)
-        debugInitialDOC(obj);
+        ErrorCounter = debugInitialDOC(obj);
         % Value getter for initial conditions
         val = getInitial(obj, cas);
         
