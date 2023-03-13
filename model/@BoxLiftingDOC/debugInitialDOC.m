@@ -1,5 +1,5 @@
 % STANDARD DEBUGGING SCRIPT
-function debugInitialDOC(obj, varargin)
+function ErrorCounter = debugInitialDOC(obj, varargin)
     
     % If argument passed it's the constraint tolerance
     DEFAULT_IPOPT_TOLERANCE = 1e-4;
