@@ -56,7 +56,7 @@ bllioc = BoxLiftingLocalIOC(Trials(TrialIndices), doc);
 
 %% Test run function
 fprintf("Started IOC.\n")
-bllioc = bllioc.runConstantWeightGridIOC(optimopts);
+bllioc = bllioc.runConstantWeightGridIOC(length(doc.costFunctionVector));
 fprintf("Ended IOC.\n");
 
 save("run_IOC_gridConstantWeight.mat", "bllioc");
