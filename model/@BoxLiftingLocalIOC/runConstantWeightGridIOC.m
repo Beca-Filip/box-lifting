@@ -12,6 +12,8 @@ rmse_grid = zeros(1, size(w_grid, 1));
 
 % Traverse grid
 for gridPoint = 1 : length(w_grid)
+    fprintf("Grid IOC Iter. %05d/%05d.\n", gridPoint, length(w_grid));
+    
     % Calculate inner RMSE
     rmse_grid(gridPoint) = obj.costFunConstantWeight(w_grid(gridPoint, :).');
 end
