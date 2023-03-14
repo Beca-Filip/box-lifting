@@ -41,7 +41,9 @@ sol_opt.regularity_check = true;
 doc.opti.solver('ipopt', sol_opt);
 
 % Get Trial Indices
-TrialIndices = (0 : 20 : 100) + [1;];
+% TrialIndices = (0 : 20 : 100) + [1;];
+% TrialIndices = (0 : 20 : 100) + [1;6;11;16];
+TrialIndices = [1;6;11;16];
 TrialIndices = TrialIndices(:);
 
 % Resample spline trajectory for these trial indices
