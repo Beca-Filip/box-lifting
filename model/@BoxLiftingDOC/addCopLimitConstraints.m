@@ -1,7 +1,7 @@
 function obj = addCopLimitConstraints(obj)
 
 % Define a tolerance for this constraint
-constraintTol = 1e-2;   % 0.01 m = 1cm
+constraintTol = 5e-2;   % 0.05 m = 5cm
 
 % Constraint: COP lower limit constraints
 obj.copLowerLimitConstraints = ...

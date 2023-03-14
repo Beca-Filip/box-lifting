@@ -1,7 +1,7 @@
 function obj = addJointLimitConstraints(obj)
 
 % Define a tolerance for this constraint
-constraintTol = 1e-2;   % 0.01 radians = 0.56 degrees
+constraintTol = 2e-2;   % 0.02 radians = 1.12 degrees
 
 % Constraint 1: Joint lower limit constraints
 obj.jointLowerLimitConstraints = ...

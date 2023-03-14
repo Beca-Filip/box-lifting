@@ -1,7 +1,7 @@
 function obj = addCollisionConstraints(obj)
 
 % Define a tolerance for this constraint
-constraintTol = 3e-2;   % 0.03 m = 3cm
+constraintTol = 8e-2;   % 0.08 m = 8cm
 
 % Constraint:
 obj.collisionConstraints = -vertcat(obj.distBodyToBox(:), obj.distBoxToTable(:)) - constraintTol;
