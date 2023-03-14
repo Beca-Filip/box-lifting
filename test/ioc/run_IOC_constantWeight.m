@@ -18,13 +18,13 @@ doc = doc.addTorqueLimitConstraints();
 doc = doc.addCopLimitConstraints();
 doc = doc.addCollisionConstraints();
 % Costs
-doc = doc.addSumSquaredJointVelocitiesCost();
-doc = doc.addSumSquaredJointAccelerationsCost();
-doc = doc.addSumSquaredJointJerksCost();
-doc = doc.addSumSquaredWristVelocityCost();
-doc = doc.addSumSquaredWristAccelerationCost();
-doc = doc.addSumSquaredJointTorquesCost();
-doc = doc.addSumSquaredJointPowersCost();
+doc = doc.addSumSquaredJointVelocitiesCost(0.82);
+doc = doc.addSumSquaredJointAccelerationsCost(10.61);
+doc = doc.addSumSquaredJointJerksCost(377.52);
+doc = doc.addSumSquaredWristVelocityCost(0.17);
+doc = doc.addSumSquaredWristAccelerationCost(1.16);
+doc = doc.addSumSquaredJointTorquesCost(90.39);
+doc = doc.addSumSquaredJointPowersCost(41.44);
 % Create parameterized cost function
 doc = doc.setParametrizedCostFunction();
 
@@ -41,7 +41,9 @@ sol_opt.regularity_check = true;
 doc.opti.solver('ipopt', sol_opt);
 
 % Get Trial Indices
-TrialIndices = (0 : 20 : 100) + [1;];
+% TrialIndices = (0 : 20 : 100) + [1;];
+% TrialIndices = (0 : 20 : 100) + [1;6;11;16];
+TrialIndices = [1;6;11;16];
 TrialIndices = TrialIndices(:);
 
 % Resample spline trajectory for these trial indices
