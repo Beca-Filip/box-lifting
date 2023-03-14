@@ -302,13 +302,13 @@ classdef BoxLiftingDOC
         obj = addCopLimitConstraints(obj);
         
         % Cost function adders
-        obj = addSumSquaredJointVelocitiesCost(obj);
-        obj = addSumSquaredJointAccelerationsCost(obj);
-        obj = addSumSquaredJointJerksCost(obj);
-        obj = addSumSquaredWristVelocityCost(obj);
-        obj = addSumSquaredWristAccelerationCost(obj);
-        obj = addSumSquaredJointTorquesCost(obj);
-        obj = addSumSquaredJointPowersCost(obj);
+        obj = addSumSquaredJointVelocitiesCost(obj, varargin);
+        obj = addSumSquaredJointAccelerationsCost(obj, varargin);
+        obj = addSumSquaredJointJerksCost(obj, varargin);
+        obj = addSumSquaredWristVelocityCost(obj, varargin);
+        obj = addSumSquaredWristAccelerationCost(obj, varargin);
+        obj = addSumSquaredJointTorquesCost(obj, varargin);
+        obj = addSumSquaredJointPowersCost(obj, varargin);
         
         % Cost function setter
         obj = setParametrizedCostFunction(obj);

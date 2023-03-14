@@ -1,4 +1,11 @@
-function obj = addSumSquaredWristVelocityCost(obj)
+function obj = addSumSquaredWristVelocityCost(obj, varargin)
+
+% If an argument is passed it's the normalization
+if nargin > 1
+    normalization = varargin{1};
+else
+    normalization = 1;
+end
 
 % Quantity to optimize:
 quantity = obj.v_wri;
@@ -24,7 +31,10 @@ elseif strcmp(obj.parameter_mode, obj.parameter_mode2)
 end
 
 % Log the cost
-obj.sumSquaredWristVelocity = theCost;
+if ~isequal(normalization, 1)
+    theCost = theCost / normalization;
+end
+obj.sumSquaredJointVelocities = theCost;
 
 % Add the cost function to the vector:
 obj.costFunctionVector = vertcat(obj.costFunctionVector, theCost);
