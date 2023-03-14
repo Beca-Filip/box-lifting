@@ -43,7 +43,15 @@ classdef BoxLiftingLocalIOC
         J = costFun(obj, w);
         J = costFun_noInit(obj, w);
         J = costFunSomeFixedWeights(obj, w);
+        J = costFunConstantWeight(obj, w);
+        J = costFunConstantWeight_noInit(obj, w);
         
+        % Runs constant weight IOC
+        obj = runConstantWeightIOC(obj, varargin);
+        % Runs genetic algorithms on constant weight IOC
+        obj = runConstantWeightGlobalIOC(obj, varargin);
+        % Runs constant weight grid IOC
+        obj = runConstantWeightGridIOC(obj, varargin);
         % Runs the IOC
         obj = runIOC(obj, varargin);
         % Runs genetic algorithms on IOC
