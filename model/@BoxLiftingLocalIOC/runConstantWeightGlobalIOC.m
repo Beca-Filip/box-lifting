@@ -28,7 +28,7 @@ ub = 1e4 * ones(nw, 1);
 
 % Call ga
 [w_opt, rmse_opt, ef_opt, out_opt, population, scores] = ...
-ga(@(w) obj.costFunConstantWeight_noInit(w), size(w0, 1), A, b, [], [], lb, ub, [], optimopts);
+ga(@(w) obj.costFunConstantWeight_noInit(w), nw, A, b, [], [], lb, ub, [], optimopts);
 
 % Set the solution
 obj.solution.w = w_opt;
