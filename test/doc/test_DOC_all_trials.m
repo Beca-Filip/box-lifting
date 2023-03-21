@@ -54,8 +54,7 @@ CC = zeros(6, length(Trials));
 
 fprintf("DOC initialization.\n");
 % For every trial
-for TrialIndex = 44 : length(Trials)
-% for TrialIndex = 1 : 1
+for TrialIndex = 1 : length(Trials)
     fprintf("BEGIN DOC number %03d/%03d.\n\n\n", TrialIndex, length(Trials));
     % Interpolate the trial with the right number of points
     Trials(TrialIndex).splineTrajectory = Trials(TrialIndex).splineTrajectory.computeValuesAndStore(linspace(0, Trials(TrialIndex).splineTrajectory.duration, splineEvaluationNumber), splineDegree-1);
@@ -79,3 +78,8 @@ for TrialIndex = 44 : length(Trials)
 end
 
 save("jerk_pred.mat", "q_pred", "q_data", "RMSE", "CC");
+
+figure;
+hist(mean(rad2deg(RMSE(:, 1:20))));
+xlabel("RMSE");
+ylabel("# traj");
