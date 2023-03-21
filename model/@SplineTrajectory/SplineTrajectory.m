@@ -75,6 +75,8 @@ classdef SplineTrajectory
             obj.currentEvaluatedDerivatives = -1;
         end
         
+        % Print to file
+        printToFile(obj, filename);
         % Computations of values at a given time vector
         V = computeValues(obj, computationTimes, derivativeOrder);
         obj = computeValuesAndStore(obj, computationTimes, derivativeOrder);
