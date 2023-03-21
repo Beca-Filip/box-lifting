@@ -44,6 +44,9 @@ classdef LiftingEnvironment
             
         end
         
+        % Print to file
+        printToFile(obj, filename);
+        
         % Default information getters
         [BoxWidth, BoxHeight, BoxMass] = defaultBoxParameters(obj);
         [TableWidth, TableHeight, TableCenterCoordinates] = defaultTableParameters(obj);
