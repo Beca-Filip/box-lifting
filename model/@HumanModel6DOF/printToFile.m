@@ -23,4 +23,24 @@ t = table(var1, var2, 'VariableNames', PropertyNames, 'RowNames', RowNames);
 % Write table to file
 writetable(t, filename, 'WriteRowNames', true, 'WriteMode', 'append', 'WriteVariableNames', true);
 
+% Joint limits
+var1 = obj.LowerJointLimits;
+var2 = obj.UpperJointLimits;
+PropertyNames = {'q_lb [rad]', 'q_ub [rad]'};
+RowNames = arrayfun(@(n) sprintf('q_%d', n), 1:6, 'UniformOutput', false);
+% Create table
+t = table(var1, var2, 'VariableNames', PropertyNames, 'RowNames', RowNames);
+% Write table to file
+writetable(t, filename, 'WriteRowNames', true, 'WriteMode', 'append', 'WriteVariableNames', true);
+
+% Torque limits
+var1 = obj.LowerTorqueLimits;
+var2 = obj.UpperTorqueLimits;
+PropertyNames = {'tau_lb [N.m]', 'tau_ub [N.m]'};
+RowNames = arrayfun(@(n) sprintf('tau_%d', n), 1:6, 'UniformOutput', false);
+% Create table
+t = table(var1, var2, 'VariableNames', PropertyNames, 'RowNames', RowNames);
+% Write table to file
+writetable(t, filename, 'WriteRowNames', true, 'WriteMode', 'append', 'WriteVariableNames', true);
+
 end
