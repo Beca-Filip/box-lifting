@@ -84,7 +84,7 @@ h_seg = plot(X(:, 1), Y(:, 1), 'Color', body_color, 'LineWidth', body_thickness,
 h_jnt = plot(X(:, 1), Y(:, 1), 'Marker', 'o', 'Color', joint_color, 'MarkerSize', joint_size, 'LineWidth', joint_thickness, 'HandleVisibility', 'Off');
 
 [Xbox, Ybox] = make_rectangle(sum(q(:, 1))*box_rotation_flag, box_initial_position_X, box_initial_position_Y, box_width, box_height, box_options);
-h_box = patch('XData', Xbox, 'YData', Ybox, 'FaceColor', box_color, 'DisplayName', box_legend);
+h_box = patch('XData', Xbox, 'YData', Ybox, 'FaceColor', box_color, 'DisplayName', box_legend, 'FaceAlpha', 0.5);
 
 xlabel(xlabel_entry);
 ylabel(ylabel_entry);
